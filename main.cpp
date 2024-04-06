@@ -7,10 +7,10 @@ const float TILE_WIDTH = 32;
 
 const float FRICTION = 0.91f;
 const float GRAVITY = 25.0f;
-const float TERMINAL_VELOCITY = 500.0f;
+const float TERMINAL_VELOCITY = 500.0f; //maximum vertical velocity
 
 int sign(int num) {
-    return (num > 0 ? 1 : -1);
+    return (num < 0 ? -1 : 1);
 }
 
 
@@ -27,14 +27,15 @@ struct Animation {
 struct Tile {
     sf::Sprite sprite;
     bool isSolid = false;
+    bool isCoin = false;
 };
 
 struct Level {
     int width = 128;
     int height = 32;
     std::string map_string;
-    Tile* tiles;
     sf::Texture map_texture;
+    Tile* tiles;
     sf::Texture background_texture;
     sf::Sprite background;
 };
@@ -42,7 +43,7 @@ struct Level {
 struct Player {
     sf::Sprite body;
     sf::FloatRect hitbox;
-    sf::RectangleShape debugger; 
+    sf::RectangleShape debugger; //red square that shows the hitbox of the player which is smaller than the actual sprite
     Animation anim[3];
     int animationState = 0; // 0 for idle, 1 for running, 2 for jumping
     
@@ -74,10 +75,10 @@ void initAnimation(Animation& anim, int width, int height, int frameCount);
 void updateAnimation(Animation& anim);
 
 void initPlayer(Player& player);
-void movePlayer(Player& player,const sf::Vector2i& direction,const float& elapsed);
+void movePlayer(Player& player, Level& level, const float& elapsed);
 void updatePlayer(Player& player, Level& level, const float& elapsed);
-bool collided_X(Player& player, Level& level);
-bool collided_Y(Player& player, Level& level);
+void collisionX(Player& player, Level& level);
+void collisionY(Player& player, Level& level);
 
 
 
@@ -150,9 +151,9 @@ void updateGame(Game& game, const float& elapsed) {
 
     
 
-    updatePlayer(game.player, game.map, elapsed);
-    game.view.setCenter(round(game.player.hitbox.left + (3 * TILE_WIDTH)), round(9 * TILE_WIDTH));
     updateLevel(game);
+    updatePlayer(game.player, game.map, elapsed);
+    game.view.setCenter(round(game.player.hitbox.left + (3 * TILE_WIDTH)), round(9 * TILE_WIDTH)); // must be integers or else strange lines appear
 }
 
 void drawGame(Game& game) {
@@ -160,10 +161,8 @@ void drawGame(Game& game) {
     if (game.map.tiles != nullptr) {
         drawLevel(game);
     }
-    game.window.draw(game.player.debugger);
+    //game.window.draw(game.player.debugger);
     game.window.draw(game.player.body);
-
-
     game.window.display();
 }
 
@@ -189,36 +188,29 @@ void initPlayer(Player& player) {
     player.hitbox = sf::FloatRect(player.body.getPosition(), sf::Vector2f(TILE_WIDTH, TILE_WIDTH));
     player.debugger = sf::RectangleShape(sf::Vector2f(TILE_WIDTH, TILE_WIDTH));
     player.debugger.setFillColor(sf::Color::Red);
-    
+   
 
-    player.velocity.x = 0;
     player.acceleration.x = 50;
 }
 
 void updatePlayer(Player& player, Level& level, const float& elapsed) {
-
-
     player.velocity.y += GRAVITY;
     player.velocity.x *= FRICTION;
 
 
-    if (abs(player.velocity.x) <= 20.0f)
+    if (abs(player.velocity.x) < 20.0f)
         player.velocity.x = 0;
 
-    if (abs(player.velocity.x) >= player.max_velocity)
+    if (abs(player.velocity.x) > player.max_velocity)
         player.velocity.x = player.max_velocity * sign(player.velocity.x);
 
-    if (player.velocity.y >= TERMINAL_VELOCITY)
+    if (player.velocity.y > TERMINAL_VELOCITY)
         player.velocity.y = TERMINAL_VELOCITY;
 
     
-    player.hitbox.left += player.velocity.x * elapsed;
-    player.hitbox.top += player.velocity.y * elapsed;
-    collided_X(player, level);
-    collided_Y(player, level);
-    player.body.setPosition(player.hitbox.left - 16, player.hitbox.top - 32);
+    movePlayer(player, level, elapsed);
 
-    // animation logic
+    // animations, still have to fix
     if (player.velocity.x == 0) 
         player.animationState = 0;
     
@@ -236,23 +228,15 @@ void updatePlayer(Player& player, Level& level, const float& elapsed) {
         player.anim[2].currentSprite.left = 32 + (player.anim[2].flipped * 32);
         player.animationState = 2;
     }
-
-    //collision
     
-
-
-
-    std::cout << player.velocity.y << '\n';
-
-    
-    player.debugger.setPosition(player.hitbox.left,player.hitbox.top);
+    //player.debugger.setPosition(player.hitbox.left,player.hitbox.top);
     updateAnimation(player.anim[player.animationState]);
     player.body.setTexture(player.anim[player.animationState].texture);
     player.body.setTextureRect(player.anim[player.animationState].currentSprite);
 
 }
 
-bool collided_X(Player& player, Level& level) {
+void collisionX(Player& player, Level& level) {
     int left_tile = player.hitbox.getPosition().x / TILE_WIDTH;
     int right_tile = left_tile + 1;
     int vertical_pos = player.hitbox.getPosition().y / TILE_WIDTH;
@@ -267,21 +251,19 @@ bool collided_X(Player& player, Level& level) {
 
                 player.velocity.x = 0;
                 player.hitbox.left = currentTile.sprite.getPosition().x - TILE_WIDTH * moveDirection;
-                return true;
 
             }
         }
     }
 
-    return false;
 }
 
-bool collided_Y(Player& player, Level& level) {
+void collisionY(Player& player, Level& level) { // no head collisions yet
     int above_tile = player.hitbox.top / TILE_WIDTH;
     int below_tile = above_tile + 1;
     float horizontal_pos = player.hitbox.left / TILE_WIDTH;
 
-    for (int j = horizontal_pos; j <= floor(horizontal_pos+1.0f); j++) {
+    for (int j = horizontal_pos; j <= horizontal_pos+1; j++) {
         Tile currentTile = level.tiles[j + below_tile * level.width];
 
         if (currentTile.isSolid && player.velocity.y >= 0 && player.hitbox.intersects(currentTile.sprite.getGlobalBounds()) ) {
@@ -289,15 +271,20 @@ bool collided_Y(Player& player, Level& level) {
             player.isJumping = false;
             player.velocity.y = 0;
             player.hitbox.top = currentTile.sprite.getPosition().y - TILE_WIDTH;
-            return true;
 
         }
 
     }
 
-    return false;
 }
 
+void movePlayer(Player& player, Level& level, const float& elapsed) {
+    player.hitbox.left += player.velocity.x * elapsed;
+    player.hitbox.top += player.velocity.y * elapsed;
+    collisionX(player, level);
+    collisionY(player, level);
+    player.body.setPosition(player.hitbox.left - 16, player.hitbox.top - 32);
+}
 
 
 void initAnimation(Animation& anim, int width, int height,int frameCount) {
@@ -307,23 +294,20 @@ void initAnimation(Animation& anim, int width, int height,int frameCount) {
 }
 
 void updateAnimation(Animation& anim) {
-
-
     if (anim.animationTimer.getElapsedTime().asSeconds() > anim.switchTime) {
 
-        if (anim.flipped) //setting width to negative mirrors image
+        if (anim.flipped) //setting width to negative flips image
             anim.currentSprite.width = -anim.frame_width;
         else 
             anim.currentSprite.width = anim.frame_width;
 
 
-        if (anim.currentSprite.left >= (anim.frameCount-1 + anim.flipped ) * std::abs(anim.currentSprite.width) ) 
-            anim.currentSprite.left = 0 + anim.flipped * std::abs(anim.currentSprite.width);
+        if (anim.currentSprite.left >= (anim.frameCount-1 + anim.flipped ) * abs(anim.currentSprite.width) ) 
+            anim.currentSprite.left = 0 + anim.flipped * abs(anim.currentSprite.width);
         else
-            anim.currentSprite.left += std::abs(anim.currentSprite.width);
+            anim.currentSprite.left += abs(anim.currentSprite.width);
         
 
-        //std::cout << (anim.currentSprite.left ) << std::endl;
         anim.animationTimer.restart();
     }
 }
