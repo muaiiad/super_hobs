@@ -10,7 +10,7 @@ const float GRAVITY = 25.0f;
 const float TERMINAL_VELOCITY = 500.0f; //maximum vertical velocity
 
 int sign(const int& num) {
-    return (num < 0 ? -1 : 1);
+    return (num > 0 ? 1 : -1);
 }
 
 
