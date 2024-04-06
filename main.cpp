@@ -3,7 +3,7 @@
 #include <string>
 #include <fstream>
 
-constexpr float TILE_WIDTH = 32;
+const float TILE_WIDTH = 32;
 
 const float FRICTION = 0.91f;
 const float GRAVITY = 25.0f;
@@ -151,7 +151,7 @@ void updateGame(Game& game, float elapsed) {
     
 
     updatePlayer(game.player,game.map, elapsed);
-    game.view.setCenter(std::roundf(game.player.hitbox.left + (3 * 32)), std::round (9 * 32));
+    game.view.setCenter(round(game.player.hitbox.left + (3 * TILE_WIDTH)), round(9 * TILE_WIDTH));
     updateLevel(game);
 }
 
@@ -186,8 +186,8 @@ void initPlayer(Player& player) {
     player.body.setTexture(player.anim[0].texture);
     player.body.setTextureRect(player.anim[0].currentSprite);
     player.body.setScale(2, 2);
-    player.hitbox = sf::FloatRect(player.body.getPosition(), sf::Vector2f(32, 32));
-    player.debugger = sf::RectangleShape(sf::Vector2f(32, 32));
+    player.hitbox = sf::FloatRect(player.body.getPosition(), sf::Vector2f(TILE_WIDTH, TILE_WIDTH));
+    player.debugger = sf::RectangleShape(sf::Vector2f(TILE_WIDTH, TILE_WIDTH));
     player.debugger.setFillColor(sf::Color::Red);
     
 
@@ -212,6 +212,12 @@ void updatePlayer(Player& player, Level& level, float elapsed) {
         player.velocity.y = TERMINAL_VELOCITY;
 
     
+    player.hitbox.left += player.velocity.x * elapsed;
+    player.hitbox.top += player.velocity.y * elapsed;
+    collided_X(player, level);
+    collided_Y(player, level);
+    player.body.setPosition(player.hitbox.left - 16, player.hitbox.top - 32);
+
     // animation logic
     if (player.velocity.x == 0) 
         player.animationState = 0;
@@ -226,17 +232,13 @@ void updatePlayer(Player& player, Level& level, float elapsed) {
         player.isJumping = true;
     }
 
-    if (player.velocity.y > 0 && player.isJumping) {
+    if (player.velocity.y > 0 ) {
         player.anim[2].currentSprite.left = 32 + (player.anim[2].flipped * 32);
         player.animationState = 2;
     }
 
     //collision
-    player.hitbox.left += player.velocity.x * elapsed;
-    player.hitbox.top += player.velocity.y * elapsed;
-    collided_X(player, level);
-    collided_Y(player, level);
-    player.body.setPosition(player.hitbox.left - 16, player.hitbox.top - 32);
+    
 
 
 
@@ -251,9 +253,9 @@ void updatePlayer(Player& player, Level& level, float elapsed) {
 }
 
 bool collided_X(Player& player, Level& level) {
-    int left_tile = player.hitbox.getPosition().x / 32;
+    int left_tile = player.hitbox.getPosition().x / TILE_WIDTH;
     int right_tile = left_tile + 1;
-    int vertical_pos = player.hitbox.getPosition().y / 32;
+    int vertical_pos = player.hitbox.getPosition().y / TILE_WIDTH;
 
     int moveDirection = sign(player.velocity.x);
 
@@ -264,7 +266,7 @@ bool collided_X(Player& player, Level& level) {
             if (currentTile.solid && player.hitbox.intersects(currentTile.sprite.getGlobalBounds())) {
 
                 player.velocity.x = 0;
-                player.hitbox.left = currentTile.sprite.getPosition().x - 32 * moveDirection;
+                player.hitbox.left = currentTile.sprite.getPosition().x - TILE_WIDTH * moveDirection;
                 return true;
 
             }
@@ -275,9 +277,9 @@ bool collided_X(Player& player, Level& level) {
 }
 
 bool collided_Y(Player& player, Level& level) {
-    int above_tile = player.hitbox.top / 32;
+    int above_tile = player.hitbox.top / TILE_WIDTH;
     int below_tile = above_tile + 1;
-    float horizontal_pos = player.hitbox.left / 32;
+    float horizontal_pos = player.hitbox.left / TILE_WIDTH;
 
     for (int j = horizontal_pos; j <= floor(horizontal_pos+1.0f); j++) {
         Tile currentTile = level.tiles[j + below_tile * level.width];
@@ -286,7 +288,7 @@ bool collided_Y(Player& player, Level& level) {
 
             player.isJumping = false;
             player.velocity.y = 0;
-            player.hitbox.top = currentTile.sprite.getPosition().y-32;
+            player.hitbox.top = currentTile.sprite.getPosition().y - TILE_WIDTH;
             return true;
 
         }
@@ -342,7 +344,7 @@ void initLevel(Level& level) {
         for (int j = 0; j < level.width; j++) {
 
             level.tiles[j + i * level.width].sprite.setTexture(level.map_texture);
-            level.tiles[j + i * level.width].sprite.setPosition(j * 32, i * 32);
+            level.tiles[j + i * level.width].sprite.setPosition(j * TILE_WIDTH, i * TILE_WIDTH);
             level.tiles[j + i * level.width].sprite.setScale(2, 2);
 
             switch (level.map_string.at(j + i * level.width)) {
@@ -417,7 +419,4 @@ void drawLevel(Game& game) {
 
             }
         }
- 
-
-    
 }
