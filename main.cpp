@@ -51,6 +51,7 @@ struct Player {
     sf::Vector2f velocity;
     sf::Vector2f acceleration;
     float max_velocity = 300.0f;
+    float min_velocity = 20.0f;
     bool isJumping = false;
 };
 
@@ -77,8 +78,10 @@ void updateAnimation(Animation& anim);
 void initPlayer(Player& player);
 void movePlayer(Player& player, Level& level, const float& elapsed);
 void updatePlayer(Player& player, Level& level, const float& elapsed);
+void updatePlayerAnimation(Player& player);
 void collisionX(Player& player, Level& level);
 void collisionY(Player& player, Level& level);
+
 
 
 
@@ -196,41 +199,11 @@ void initPlayer(Player& player) {
 void updatePlayer(Player& player, Level& level, const float& elapsed) {
     player.velocity.y += GRAVITY;
     player.velocity.x *= FRICTION;
-
-
-    if (abs(player.velocity.x) < 20.0f)
-        player.velocity.x = 0;
-
-    if (abs(player.velocity.x) > player.max_velocity)
-        player.velocity.x = player.max_velocity * sign(player.velocity.x);
-
-    if (player.velocity.y > TERMINAL_VELOCITY)
-        player.velocity.y = TERMINAL_VELOCITY;
-
     
     movePlayer(player, level, elapsed);
-
-    // animations, still have to fix
-    if (player.velocity.x == 0) 
-        player.animationState = 0;
-    
-
-    if (abs(player.velocity.x) > 0)
-        player.animationState = 1;
-
-    if (player.velocity.y < 0) {
-        player.anim[2].currentSprite.left = 0 + (player.anim[2].flipped * 32);
-        player.animationState = 2;
-        player.isJumping = true;
-    }
-
-    if (player.velocity.y > 0 ) {
-        player.anim[2].currentSprite.left = 32 + (player.anim[2].flipped * 32);
-        player.animationState = 2;
-    }
+    updatePlayerAnimation(player); //still have to fix
     
     //player.debugger.setPosition(player.hitbox.left,player.hitbox.top);
-    updateAnimation(player.anim[player.animationState]);
     player.body.setTexture(player.anim[player.animationState].texture);
     player.body.setTextureRect(player.anim[player.animationState].currentSprite);
 
@@ -279,6 +252,17 @@ void collisionY(Player& player, Level& level) { // no head collisions yet
 }
 
 void movePlayer(Player& player, Level& level, const float& elapsed) {
+    // friction is a percentage, so velocity never really reaches zero, this sets the velocity the velocity to zero once it reaches a small amount 
+    if (abs(player.velocity.x) < player.min_velocity )
+        player.velocity.x = 0;
+
+   
+    if (abs(player.velocity.x) > player.max_velocity)
+        player.velocity.x = player.max_velocity * sign(player.velocity.x);
+
+    if (player.velocity.y > TERMINAL_VELOCITY)
+        player.velocity.y = TERMINAL_VELOCITY;
+
     player.hitbox.left += player.velocity.x * elapsed;
     player.hitbox.top += player.velocity.y * elapsed;
     collisionX(player, level);
@@ -286,6 +270,26 @@ void movePlayer(Player& player, Level& level, const float& elapsed) {
     player.body.setPosition(player.hitbox.left - 16, player.hitbox.top - 32);
 }
 
+void updatePlayerAnimation(Player& player) {
+    if (player.velocity.x == 0)
+        player.animationState = 0;
+
+    if (abs(player.velocity.x) > 0)
+        player.animationState = 1;
+
+    if (player.velocity.y < 0) {
+        player.anim[2].currentSprite.left = 0 + (player.anim[2].flipped * 32);
+        player.animationState = 2;
+        player.isJumping = true;
+    }
+
+    if (player.velocity.y > 0) {
+        player.anim[2].currentSprite.left = 32 + (player.anim[2].flipped * 32);
+        player.animationState = 2;
+    }
+
+    updateAnimation(player.anim[player.animationState]);
+}
 
 void initAnimation(Animation& anim, int width, int height,int frameCount) {
     anim.frameCount = frameCount;
@@ -327,8 +331,8 @@ void initLevel(Level& level) {
     for (int i = 0; i < level.height; i++) {
         for (int j = 0; j < level.width; j++) {
 
-            level.tiles[j + i * level.width].sprite.setTexture(level.map_texture);
             level.tiles[j + i * level.width].sprite.setPosition(j * TILE_WIDTH, i * TILE_WIDTH);
+            level.tiles[j + i * level.width].sprite.setTexture(level.map_texture);
             level.tiles[j + i * level.width].sprite.setScale(2, 2);
 
             switch (level.map_string.at(j + i * level.width)) {
@@ -368,6 +372,7 @@ void initLevel(Level& level) {
                     level.tiles[j + i * level.width].sprite.setTextureRect(sf::IntRect(16 + 64, 16 + 64, 16, 16));
                     level.tiles[j + i * level.width].isSolid = true;
                     break;
+                default: break;
             }
 
 
