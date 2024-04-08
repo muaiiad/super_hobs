@@ -57,7 +57,7 @@ struct Player {
 
 struct Game {
     sf::RenderWindow window;
-    sf::View view;
+    sf::View view; // this is the camera
     Level map;
     Player player;
 };
@@ -91,6 +91,7 @@ int main()
     initGame(game);
     
     sf::Clock clock;
+    sf::Clock levelTimer; //use this, clock is used for updating frames
 
     while (game.window.isOpen()) {
         updateGame(game,clock.restart().asSeconds());
@@ -105,7 +106,7 @@ int main()
 
 
 void initGame(Game& game) {
-    game.window.create(sf::VideoMode(1536, 864), "test");
+    game.window.create(sf::VideoMode(1536, 864), "Super Hobs");
     game.window.setFramerateLimit(120);
     game.view.setCenter(sf::Vector2f(350.f, 300.f));
     game.view.setSize(sf::Vector2f(1056, 594));
@@ -134,8 +135,6 @@ void updateGame(Game& game, const float& elapsed) {
 
     }
 
-    
-
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::D)) {
         for (int i = 0; i < 3; i++)
             game.player.anim[i].flipped = 0;
@@ -151,12 +150,10 @@ void updateGame(Game& game, const float& elapsed) {
         game.player.velocity.x += game.player.acceleration.x * -1;
     }
     
-
-    
-
     updateLevel(game);
     updatePlayer(game.player, game.map, elapsed);
     game.view.setCenter(round(game.player.hitbox.left + (3 * TILE_WIDTH)), round(9 * TILE_WIDTH)); // must be integers or else strange lines appear
+
 }
 
 void drawGame(Game& game) {
@@ -226,6 +223,8 @@ void collisionX(Player& player, Level& level) {
                 player.hitbox.left = currentTile.sprite.getPosition().x - TILE_WIDTH * moveDirection;
 
             }
+
+            //TODO: Coin (gem) logic here, condition should be the same as above except instead of checking for isSolid, check for isCoin
         }
     }
 
@@ -372,6 +371,7 @@ void initLevel(Level& level) {
                     level.tiles[j + i * level.width].sprite.setTextureRect(sf::IntRect(16 + 64, 16 + 64, 16, 16));
                     level.tiles[j + i * level.width].isSolid = true;
                     break;
+                case 'C': break; // coin here, texture is "./assets/level/gem.png"
                 default: break;
             }
 
@@ -402,7 +402,8 @@ void drawLevel(Game& game) {
         for (int i = 0; i < game.map.height; i++) {
             for (int j = 0; j < game.map.width; j++) {
 
-                if (game.map.map_string.at(j + i * game.map.width) != '.') { //make sure sprite isn't empty
+                Tile currentTile = game.map.tiles[j + i * game.map.width];
+                if (currentTile.isSolid || currentTile.isCoin) { //make sure sprite isn't empty
                     game.window.draw(game.map.tiles[j + i * game.map.width].sprite);
                 }
 
