@@ -34,6 +34,7 @@ struct Tile {
 struct Level {
     int width = 128;
     int height = 32;
+    Clock timer;
     std::string map_string;
     Texture map_texture;
     Tile* tiles;
@@ -92,7 +93,7 @@ int main()
     initGame(game);
     
     Clock clock;
-    Clock levelTimer; //use this, clock is used for updating frames
+    
 
     while (game.window.isOpen()) {
         updateGame(game,clock.restart().asSeconds());
@@ -118,7 +119,8 @@ void initGame(Game& game) {
 
 void updateGame(Game& game, const float& elapsed) {
 
-    
+    //timer logic here
+
     Event event;
     while (game.window.pollEvent(event))
     {
