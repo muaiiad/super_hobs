@@ -66,7 +66,7 @@ struct Game {
 
 
 void initGame(Game& game);
-void updateGame(Game& game, const float& elapsed);
+void updateGame(Game& game, float elapsed);
 void drawGame(Game& game);
 
 void initLevel(Level& level);
@@ -78,8 +78,8 @@ void initAnimation(Animation& anim, int width, int height, int frameCount);
 void updateAnimation(Animation& anim);
 
 void initPlayer(Player& player);
-void movePlayer(Player& player, Level& level, const float& elapsed);
-void updatePlayer(Player& player, Level& level, const float& elapsed);
+void movePlayer(Player& player, Level& level, float elapsed);
+void updatePlayer(Player& player, Level& level, float elapsed);
 void updatePlayerAnimation(Player& player);
 void collisionX(Player& player, Level& level);
 void collisionY(Player& player, Level& level);
@@ -117,7 +117,7 @@ void initGame(Game& game) {
     initLevel(game.map);
 }
 
-void updateGame(Game& game, const float& elapsed) {
+void updateGame(Game& game, float elapsed) {
 
 
     Event event;
@@ -201,7 +201,7 @@ void initPlayer(Player& player) {
     player.acceleration.x = 50;
 }
 
-void updatePlayer(Player& player, Level& level, const float& elapsed) {
+void updatePlayer(Player& player, Level& level, float elapsed) {
     player.velocity.y += GRAVITY;
     player.velocity.x *= FRICTION;
     
@@ -261,7 +261,7 @@ void collisionY(Player& player, Level& level) { // no head collisions yet
 
 }
 
-void movePlayer(Player& player, Level& level, const float& elapsed) {
+void movePlayer(Player& player, Level& level, float elapsed) {
     // friction is a percentage, so velocity never really reaches zero, this sets the velocity the velocity to zero once it reaches a small amount 
     if (abs(player.velocity.x) < player.min_velocity )
         player.velocity.x = 0;
