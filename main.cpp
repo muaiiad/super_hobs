@@ -1,7 +1,8 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include <string>
-#include <fstream>
+#include <fstream> 
+using namespace sf;
 
 const float TILE_WIDTH = 32;
 
@@ -15,17 +16,17 @@ int sign(const int& num) {
 
 
 struct Animation {
-    sf::Texture texture;
-    sf::IntRect currentSprite;
+    Texture texture;
+    IntRect currentSprite;
     float frame_width = 0;
     int frameCount = 6;
-    sf::Clock animationTimer;
+    Clock animationTimer;
     bool flipped = 0;
     float switchTime = 0.12f;
 };
 
 struct Tile {
-    sf::Sprite sprite;
+    Sprite sprite;
     bool isSolid = false;
     bool isCoin = false;
 };
@@ -34,30 +35,30 @@ struct Level {
     int width = 128;
     int height = 32;
     std::string map_string;
-    sf::Texture map_texture;
+    Texture map_texture;
     Tile* tiles;
-    sf::Texture background_texture;
-    sf::Sprite background;
+    Texture background_texture;
+    Sprite background;
 };
 
 struct Player {
-    sf::Sprite body;
-    sf::FloatRect hitbox;
-    sf::RectangleShape debugger; //red square that shows the hitbox of the player which is smaller than the actual sprite
+    Sprite body;
+    FloatRect hitbox;
+    RectangleShape debugger; //red square that shows the hitbox of the player which is smaller than the actual sprite
     Animation anim[3];
     int animationState = 0; // 0 for idle, 1 for running, 2 for jumping
     
 
-    sf::Vector2f velocity;
-    sf::Vector2f acceleration;
+    Vector2f velocity;
+    Vector2f acceleration;
     float max_velocity = 300.0f;
     float min_velocity = 20.0f;
     bool isJumping = false;
 };
 
 struct Game {
-    sf::RenderWindow window;
-    sf::View view; // this is the camera
+    RenderWindow window;
+    View view; // this is the camera
     Level map;
     Player player;
 };
@@ -90,8 +91,8 @@ int main()
     Game game;
     initGame(game);
     
-    sf::Clock clock;
-    sf::Clock levelTimer; //use this, clock is used for updating frames
+    Clock clock;
+    Clock levelTimer; //use this, clock is used for updating frames
 
     while (game.window.isOpen()) {
         updateGame(game,clock.restart().asSeconds());
@@ -106,10 +107,10 @@ int main()
 
 
 void initGame(Game& game) {
-    game.window.create(sf::VideoMode(1536, 864), "Super Hobs");
+    game.window.create(VideoMode(1536, 864), "Super Hobs");
     game.window.setFramerateLimit(120);
-    game.view.setCenter(sf::Vector2f(350.f, 300.f));
-    game.view.setSize(sf::Vector2f(1056, 594));
+    game.view.setCenter(Vector2f(350.f, 300.f));
+    game.view.setSize(Vector2f(1056, 594));
 
     initPlayer(game.player);
     initLevel(game.map);
@@ -118,24 +119,24 @@ void initGame(Game& game) {
 void updateGame(Game& game, const float& elapsed) {
 
     
-    sf::Event event;
+    Event event;
     while (game.window.pollEvent(event))
     {
         switch (event.type) {
-            case sf::Event::Closed:
+            case Event::Closed:
                 delete[] game.map.tiles;
                 game.map.tiles = nullptr;
                 game.window.close(); return; break;
 
-            case sf::Event::KeyPressed:
-                if (event.key.scancode == sf::Keyboard::Scan::W && !game.player.isJumping) {
+            case Event::KeyPressed:
+                if (event.key.scancode == Keyboard::Scan::W && !game.player.isJumping) {
                     game.player.velocity.y = -800.0f;
                 } break;
         }
 
     }
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::D)) {
+    if (Keyboard::isKeyPressed(Keyboard::Scan::D)) {
         for (int i = 0; i < 3; i++)
             game.player.anim[i].flipped = 0;
 
@@ -143,7 +144,7 @@ void updateGame(Game& game, const float& elapsed) {
 
     }
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::A)) {
+    if (Keyboard::isKeyPressed(Keyboard::Scan::A)) {
         for (int i = 0; i < 3; i++)
             game.player.anim[i].flipped = 1;
 
@@ -185,9 +186,9 @@ void initPlayer(Player& player) {
     player.body.setTexture(player.anim[0].texture);
     player.body.setTextureRect(player.anim[0].currentSprite);
     player.body.setScale(2, 2);
-    player.hitbox = sf::FloatRect(player.body.getPosition(), sf::Vector2f(TILE_WIDTH, TILE_WIDTH));
-    player.debugger = sf::RectangleShape(sf::Vector2f(TILE_WIDTH, TILE_WIDTH));
-    player.debugger.setFillColor(sf::Color::Red);
+    player.hitbox = FloatRect(player.body.getPosition(), Vector2f(TILE_WIDTH, TILE_WIDTH));
+    player.debugger = RectangleShape(Vector2f(TILE_WIDTH, TILE_WIDTH));
+    player.debugger.setFillColor(Color::Red);
    
 
     player.acceleration.x = 50;
@@ -292,7 +293,7 @@ void updatePlayerAnimation(Player& player) {
 
 void initAnimation(Animation& anim, int width, int height,int frameCount) {
     anim.frameCount = frameCount;
-    anim.currentSprite = sf::IntRect(0, 0, width, height);
+    anim.currentSprite = IntRect(0, 0, width, height);
     anim.frame_width = anim.currentSprite.width;
 }
 
@@ -322,7 +323,7 @@ void initLevel(Level& level) {
     loadLevelFile(level);
     
     level.background.setTexture(level.background_texture);
-    level.background.setColor(sf::Color(230, 230, 230, 255));
+    level.background.setColor(Color(230, 230, 230, 255));
     level.background.setScale(3, 3);
     level.background.setOrigin(192, 120);
     level.tiles = new Tile[level.height * level.width];
@@ -336,39 +337,39 @@ void initLevel(Level& level) {
 
             switch (level.map_string.at(j + i * level.width)) {
                 case '1':
-                    level.tiles[j + i * level.width].sprite.setTextureRect(sf::IntRect(16, 16, 16, 16));
+                    level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16, 16, 16, 16));
                     level.tiles[j + i * level.width].isSolid = true;
 					break;
                 case '2':
-                    level.tiles[j + i * level.width].sprite.setTextureRect(sf::IntRect(16+32, 16, 16, 16));
+                    level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16+32, 16, 16, 16));
                     level.tiles[j + i * level.width].isSolid = true;
                     break;
                 case '3':
-                    level.tiles[j + i * level.width].sprite.setTextureRect(sf::IntRect(16+64, 16, 16, 16));
+                    level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16+64, 16, 16, 16));
                     level.tiles[j + i * level.width].isSolid = true;
                     break;
                 case '4':
-                    level.tiles[j + i * level.width].sprite.setTextureRect(sf::IntRect(16, 16+32, 16, 16));
+                    level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16, 16+32, 16, 16));
                     level.tiles[j + i * level.width].isSolid = true;
                     break;
                 case '5':
-                    level.tiles[j + i * level.width].sprite.setTextureRect(sf::IntRect(16+32, 16 + 32, 16, 16));
+                    level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16+32, 16 + 32, 16, 16));
                     level.tiles[j + i * level.width].isSolid = true;
                     break;
                 case '6':
-                    level.tiles[j + i * level.width].sprite.setTextureRect(sf::IntRect(16 + 64, 16 + 32, 16, 16));
+                    level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16 + 64, 16 + 32, 16, 16));
                     level.tiles[j + i * level.width].isSolid = true;
                     break;
                 case '7': 
-                    level.tiles[j + i * level.width].sprite.setTextureRect(sf::IntRect(16, 16 + 64, 16, 16));
+                    level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16, 16 + 64, 16, 16));
                     level.tiles[j + i * level.width].isSolid = true;
                     break;
                 case '8':
-                    level.tiles[j + i * level.width].sprite.setTextureRect(sf::IntRect(16 + 32, 16 + 64, 16, 16));
+                    level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16 + 32, 16 + 64, 16, 16));
                     level.tiles[j + i * level.width].isSolid = true;
                     break;
                 case '9':
-                    level.tiles[j + i * level.width].sprite.setTextureRect(sf::IntRect(16 + 64, 16 + 64, 16, 16));
+                    level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16 + 64, 16 + 64, 16, 16));
                     level.tiles[j + i * level.width].isSolid = true;
                     break;
                 case 'C': break; // coin here, texture is "./assets/level/gem.png"
