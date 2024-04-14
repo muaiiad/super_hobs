@@ -300,7 +300,6 @@ void updatePlayerAnimation(Player& player) {
         player.animationState = 2;
     }
 
-    std::cout << player.animationState << '\n';
     updateAnimation(player.anim[player.animationState]);
 
 }
