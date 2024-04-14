@@ -46,10 +46,10 @@ struct Player {
     Sprite body;
     FloatRect hitbox;
     RectangleShape debugger; //red square that shows the hitbox of the player which is smaller than the actual sprite
+
     Animation anim[3];
     int animationState = 0; // 0 for idle, 1 for running, 2 for jumping
     
-
     Vector2f velocity;
     Vector2f acceleration;
     float max_velocity = 300.0f;
@@ -119,7 +119,6 @@ void initGame(Game& game) {
 
 void updateGame(Game& game, const float& elapsed) {
 
-    //timer logic here
 
     Event event;
     while (game.window.pollEvent(event))
@@ -152,10 +151,20 @@ void updateGame(Game& game, const float& elapsed) {
 
         game.player.velocity.x += game.player.acceleration.x * -1;
     }
+
+
+    if (Keyboard::isKeyPressed(Keyboard::Scan::Space)) {
+        game.player.velocity.y = -500;
+    }
+
     
     updateLevel(game);
     updatePlayer(game.player, game.map, elapsed);
-    game.camera.setCenter(round(game.player.hitbox.left + (3 * TILE_WIDTH)), round(9 * TILE_WIDTH)); // must be integers or else strange lines appear
+
+
+    float cameraX = round(game.player.hitbox.left + (3 * TILE_WIDTH));
+    float cameraY = round(9 * TILE_WIDTH);
+    game.camera.setCenter(cameraX,cameraY); // must be integers or else strange lines appear
 
 }
 
@@ -210,6 +219,8 @@ void updatePlayer(Player& player, Level& level, const float& elapsed) {
 }
 
 void collisionX(Player& player, Level& level) {
+
+
     int left_tile = player.hitbox.getPosition().x / TILE_WIDTH;
     int right_tile = left_tile + 1;
     int vertical_pos = player.hitbox.getPosition().y / TILE_WIDTH;
@@ -234,6 +245,11 @@ void collisionX(Player& player, Level& level) {
 }
 
 void collisionY(Player& player, Level& level) { // no head collisions yet
+
+    if (player.hitbox.top < 0) {
+        player.hitbox.top = 0;
+    }
+
     int above_tile = player.hitbox.top / TILE_WIDTH;
     int below_tile = above_tile + 1;
     float horizontal_pos = player.hitbox.left / TILE_WIDTH;
@@ -279,11 +295,13 @@ void updatePlayerAnimation(Player& player) {
     if (abs(player.velocity.x) > 0)
         player.animationState = 1;
 
+
     if (player.velocity.y < 0) {
         player.anim[2].currentSprite.left = 0 + (player.anim[2].flipped * 32);
         player.animationState = 2;
         player.isJumping = true;
     }
+
 
     if (player.velocity.y > 0) {
         player.anim[2].currentSprite.left = 32 + (player.anim[2].flipped * 32);
@@ -300,13 +318,14 @@ void initAnimation(Animation& anim, int width, int height,int frameCount) {
 }
 
 void updateAnimation(Animation& anim) {
+
+    if (anim.flipped) //setting width to negative flips image
+        anim.currentSprite.width = -anim.frame_width;
+    else
+        anim.currentSprite.width = anim.frame_width;
+
+
     if (anim.timer.getElapsedTime().asSeconds() > anim.switchTime) {
-
-        if (anim.flipped) //setting width to negative flips image
-            anim.currentSprite.width = -anim.frame_width;
-        else 
-            anim.currentSprite.width = anim.frame_width;
-
 
         if (anim.currentSprite.left >= (anim.frameCount-1 + anim.flipped ) * abs(anim.currentSprite.width) ) 
             anim.currentSprite.left = 0 + anim.flipped * abs(anim.currentSprite.width);
