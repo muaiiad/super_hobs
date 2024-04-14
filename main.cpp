@@ -58,7 +58,7 @@ struct Player {
 
 struct Game {
     RenderWindow window;
-    View view; // this is the camera
+    View camera; // this is the camera
     Level map;
     Player player;
 };
@@ -109,8 +109,8 @@ int main()
 void initGame(Game& game) {
     game.window.create(VideoMode(1536, 864), "Super Hobs");
     game.window.setFramerateLimit(120);
-    game.view.setCenter(Vector2f(350.f, 300.f));
-    game.view.setSize(Vector2f(1056, 594));
+    game.camera.setCenter(Vector2f(350.f, 300.f));
+    game.camera.setSize(Vector2f(1056, 594));
 
     initPlayer(game.player);
     initLevel(game.map);
@@ -153,12 +153,12 @@ void updateGame(Game& game, const float& elapsed) {
     
     updateLevel(game);
     updatePlayer(game.player, game.map, elapsed);
-    game.view.setCenter(round(game.player.hitbox.left + (3 * TILE_WIDTH)), round(9 * TILE_WIDTH)); // must be integers or else strange lines appear
+    game.camera.setCenter(round(game.player.hitbox.left + (3 * TILE_WIDTH)), round(9 * TILE_WIDTH)); // must be integers or else strange lines appear
 
 }
 
 void drawGame(Game& game) {
-    game.window.setView(game.view);
+    game.window.setView(game.camera);
     if (game.map.tiles != nullptr) {
         drawLevel(game);
     }
@@ -394,7 +394,7 @@ void loadLevelFile(Level& level) {
 }
 
 void updateLevel(Game& game) {
-    game.map.background.setPosition(game.view.getCenter());
+    game.map.background.setPosition(game.camera.getCenter());
 }
 
 void drawLevel(Game& game) {
