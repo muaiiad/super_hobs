@@ -153,10 +153,6 @@ void updateGame(Game& game, const float& elapsed) {
     }
 
 
-    if (Keyboard::isKeyPressed(Keyboard::Scan::Space)) {
-        game.player.velocity.y = -500;
-    }
-
     
     updateLevel(game);
     updatePlayer(game.player, game.map, elapsed);
@@ -246,10 +242,6 @@ void collisionX(Player& player, Level& level) {
 
 void collisionY(Player& player, Level& level) { // no head collisions yet
 
-    if (player.hitbox.top < 0) {
-        player.hitbox.top = 0;
-    }
-
     int above_tile = player.hitbox.top / TILE_WIDTH;
     int below_tile = above_tile + 1;
     float horizontal_pos = player.hitbox.left / TILE_WIDTH;
@@ -289,10 +281,11 @@ void movePlayer(Player& player, Level& level, const float& elapsed) {
 }
 
 void updatePlayerAnimation(Player& player) {
-    if (player.velocity.x == 0)
+
+    if (player.velocity.x == 0 && player.velocity.y == 0)
         player.animationState = 0;
 
-    if (abs(player.velocity.x) > 0)
+    if (abs(player.velocity.x) > 0 && player.velocity.y == 0)
         player.animationState = 1;
 
 
@@ -308,7 +301,9 @@ void updatePlayerAnimation(Player& player) {
         player.animationState = 2;
     }
 
+    std::cout << player.animationState << '\n';
     updateAnimation(player.anim[player.animationState]);
+
 }
 
 void initAnimation(Animation& anim, int width, int height,int frameCount) {
@@ -327,12 +322,11 @@ void updateAnimation(Animation& anim) {
 
     if (anim.timer.getElapsedTime().asSeconds() > anim.switchTime) {
 
-        if (anim.currentSprite.left >= (anim.frameCount-1 + anim.flipped ) * abs(anim.currentSprite.width) ) 
-            anim.currentSprite.left = 0 + anim.flipped * abs(anim.currentSprite.width);
+        if (anim.currentSprite.left >= (anim.frameCount-1 + anim.flipped) * abs(anim.currentSprite.width) ) 
+            anim.currentSprite.left = anim.flipped * abs(anim.currentSprite.width);
         else
             anim.currentSprite.left += abs(anim.currentSprite.width);
         
-
         anim.timer.restart();
     }
 }
