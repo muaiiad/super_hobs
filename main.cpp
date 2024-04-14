@@ -20,7 +20,7 @@ struct Animation {
     IntRect currentSprite;
     float frame_width = 0;
     int frameCount = 6;
-    Clock animationTimer;
+    Clock timer;
     bool flipped = 0;
     float switchTime = 0.12f;
 };
@@ -300,7 +300,7 @@ void initAnimation(Animation& anim, int width, int height,int frameCount) {
 }
 
 void updateAnimation(Animation& anim) {
-    if (anim.animationTimer.getElapsedTime().asSeconds() > anim.switchTime) {
+    if (anim.timer.getElapsedTime().asSeconds() > anim.switchTime) {
 
         if (anim.flipped) //setting width to negative flips image
             anim.currentSprite.width = -anim.frame_width;
@@ -314,7 +314,7 @@ void updateAnimation(Animation& anim) {
             anim.currentSprite.left += abs(anim.currentSprite.width);
         
 
-        anim.animationTimer.restart();
+        anim.timer.restart();
     }
 }
 
