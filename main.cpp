@@ -65,17 +65,10 @@ struct Game {
 };
 
 
+
 void initGame(Game& game);
 void updateGame(Game& game, float elapsed);
 void drawGame(Game& game);
-
-void initLevel(Level& level);
-void loadLevelFile(Level& level);
-void updateLevel(Game& game);
-void drawLevel(Game& game);
-
-void initAnimation(Animation& anim, int width, int height, int frameCount);
-void updateAnimation(Animation& anim);
 
 void initPlayer(Player& player);
 void movePlayer(Player& player, Level& level, float elapsed);
@@ -84,7 +77,14 @@ void updatePlayerAnimation(Player& player);
 void collisionX(Player& player, Level& level);
 void collisionY(Player& player, Level& level);
 
+void initAnimation(Animation& anim, int width, int height, int frameCount);
+void updateAnimation(Animation& anim);
 
+
+void initLevel(Level& level);
+void loadLevelFile(Level& level);
+void updateLevel(Game& game);
+void drawLevel(Game& game);
 
 
 int main()
@@ -103,7 +103,6 @@ int main()
 
     return 0;
 }
-
 
 
 
@@ -306,6 +305,8 @@ void updatePlayerAnimation(Player& player) {
 
 }
 
+
+
 void initAnimation(Animation& anim, int width, int height,int frameCount) {
     anim.frameCount = frameCount;
     anim.currentSprite = IntRect(0, 0, width, height);
@@ -330,6 +331,7 @@ void updateAnimation(Animation& anim) {
         anim.timer.restart();
     }
 }
+
 
 
 void initLevel(Level& level) {
