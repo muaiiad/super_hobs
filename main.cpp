@@ -16,10 +16,10 @@ int sign(const int& num) {
 
 
 struct Animation {
-    Texture texture;
+    Texture spritesheet;
     IntRect currentSprite;
-    float frame_width = 0;
-    int frameCount = 6;
+    float frameWidth = 0;
+    int frameCount = 0;
     Clock timer;
     bool flipped = 0;
     float switchTime = 0.12f;
@@ -36,9 +36,9 @@ struct Level {
     int height = 32;
     Clock timer;
     std::string map_string;
-    Texture map_texture;
+    Texture spritesheet;
     Tile* tiles;
-    Texture background_texture;
+    Texture backgroundImage;
     Sprite background;
 };
 
@@ -49,7 +49,7 @@ struct Player {
 
     Animation anim[3];
     int animationState = 0; // 0 for idle, 1 for running, 2 for jumping
-    
+
     Vector2f velocity;
     Vector2f acceleration;
     float max_velocity = 300.0f;
@@ -59,7 +59,7 @@ struct Player {
 
 struct Game {
     RenderWindow window;
-    View camera; // this is the camera
+    View camera;
     Level map;
     Player player;
 };
@@ -91,12 +91,12 @@ int main()
 {
     Game game;
     initGame(game);
-    
+
     Clock clock;
-    
+
 
     while (game.window.isOpen()) {
-        updateGame(game,clock.restart().asSeconds());
+        updateGame(game, clock.restart().asSeconds());
         game.window.clear();
         drawGame(game);
     }
@@ -109,6 +109,7 @@ int main()
 void initGame(Game& game) {
     game.window.create(VideoMode(1536, 864), "Super Hobs");
     game.window.setFramerateLimit(120);
+
     game.camera.setCenter(Vector2f(350.f, 300.f));
     game.camera.setSize(Vector2f(1056, 594));
 
@@ -123,15 +124,15 @@ void updateGame(Game& game, float elapsed) {
     while (game.window.pollEvent(event))
     {
         switch (event.type) {
-            case Event::Closed:
-                delete[] game.map.tiles;
-                game.map.tiles = nullptr;
-                game.window.close(); return; break;
+        case Event::Closed:
+            delete[] game.map.tiles;
+            game.map.tiles = nullptr;
+            game.window.close(); return; break;
 
-            case Event::KeyPressed:
-                if (event.key.scancode == Keyboard::Scan::W && !game.player.isJumping) {
-                    game.player.velocity.y = -800.0f;
-                } break;
+        case Event::KeyPressed:
+            if (event.key.scancode == Keyboard::Scan::W && !game.player.isJumping) {
+                game.player.velocity.y = -800.0f;
+            } break;
         }
 
     }
@@ -152,14 +153,14 @@ void updateGame(Game& game, float elapsed) {
     }
 
 
-    
+
     updateLevel(game);
     updatePlayer(game.player, game.map, elapsed);
 
 
-    float cameraX = round(game.player.hitbox.left + (3 * TILE_WIDTH));
-    float cameraY = round(9 * TILE_WIDTH);
-    game.camera.setCenter(cameraX,cameraY); // must be integers or else strange lines appear
+    int cameraX = round(game.player.hitbox.left + (3 * TILE_WIDTH));
+    int cameraY = round(9 * TILE_WIDTH);
+    game.camera.setCenter(cameraX, cameraY); // must be integers or else strange lines appear
 
 }
 
@@ -177,25 +178,27 @@ void drawGame(Game& game) {
 
 void initPlayer(Player& player) {
 
-    player.anim[0].texture.loadFromFile("./assets/player/spritesheet_idle.png");
+    player.anim[0].spritesheet.loadFromFile("./assets/player/spritesheet_idle.png");
     initAnimation(player.anim[0], 33, 32, 4);
 
-    player.anim[1].texture.loadFromFile("./assets/player/spritesheet_run.png");
+    player.anim[1].spritesheet.loadFromFile("./assets/player/spritesheet_run.png");
     player.anim[1].switchTime = 0.08f;
     initAnimation(player.anim[1], 33, 32, 6);
 
-    player.anim[2].texture.loadFromFile("./assets/player/spritesheet_jump.png");
+    player.anim[2].spritesheet.loadFromFile("./assets/player/spritesheet_jump.png");
     player.anim[2].switchTime = 0.5f;
     initAnimation(player.anim[2], 33, 32, 2);
 
 
-    player.body.setTexture(player.anim[0].texture);
+    player.body.setTexture(player.anim[0].spritesheet);
     player.body.setTextureRect(player.anim[0].currentSprite);
     player.body.setScale(2, 2);
+
     player.hitbox = FloatRect(player.body.getPosition(), Vector2f(TILE_WIDTH, TILE_WIDTH));
+
     player.debugger = RectangleShape(Vector2f(TILE_WIDTH, TILE_WIDTH));
     player.debugger.setFillColor(Color::Red);
-   
+
 
     player.acceleration.x = 50;
 }
@@ -203,12 +206,12 @@ void initPlayer(Player& player) {
 void updatePlayer(Player& player, Level& level, float elapsed) {
     player.velocity.y += GRAVITY;
     player.velocity.x *= FRICTION;
-    
+
     movePlayer(player, level, elapsed);
-    updatePlayerAnimation(player); //still have to fix
-    
+    updatePlayerAnimation(player);
+
     //player.debugger.setPosition(player.hitbox.left,player.hitbox.top);
-    player.body.setTexture(player.anim[player.animationState].texture);
+    player.body.setTexture(player.anim[player.animationState].spritesheet);
     player.body.setTextureRect(player.anim[player.animationState].currentSprite);
 
 }
@@ -233,7 +236,6 @@ void collisionX(Player& player, Level& level) {
 
             }
 
-            //TODO: Coin (gem) logic here, condition should be the same as above except instead of checking for isSolid, check for isCoin
         }
     }
 
@@ -245,10 +247,10 @@ void collisionY(Player& player, Level& level) { // no head collisions yet
     int below_tile = above_tile + 1;
     float horizontal_pos = player.hitbox.left / TILE_WIDTH;
 
-    for (int j = horizontal_pos; j <= horizontal_pos+1; j++) {
+    for (int j = horizontal_pos; j <= horizontal_pos + 1; j++) {
         Tile currentTile = level.tiles[j + below_tile * level.width];
 
-        if (currentTile.isSolid && player.velocity.y >= 0 && player.hitbox.intersects(currentTile.sprite.getGlobalBounds()) ) {
+        if (currentTile.isSolid && player.velocity.y >= 0 && player.hitbox.intersects(currentTile.sprite.getGlobalBounds())) {
 
             player.isJumping = false;
             player.velocity.y = 0;
@@ -262,10 +264,10 @@ void collisionY(Player& player, Level& level) { // no head collisions yet
 
 void movePlayer(Player& player, Level& level, float elapsed) {
     // friction is a percentage, so velocity never really reaches zero, this sets the velocity the velocity to zero once it reaches a small amount 
-    if (abs(player.velocity.x) < player.min_velocity )
+    if (abs(player.velocity.x) < player.min_velocity)
         player.velocity.x = 0;
 
-   
+
     if (abs(player.velocity.x) > player.max_velocity)
         player.velocity.x = player.max_velocity * sign(player.velocity.x);
 
@@ -306,39 +308,40 @@ void updatePlayerAnimation(Player& player) {
 
 
 
-void initAnimation(Animation& anim, int width, int height,int frameCount) {
+void initAnimation(Animation& anim, int width, int height, int frameCount) {
     anim.frameCount = frameCount;
     anim.currentSprite = IntRect(0, 0, width, height);
-    anim.frame_width = anim.currentSprite.width;
+    anim.frameWidth = anim.currentSprite.width;
 }
 
 void updateAnimation(Animation& anim) {
 
     if (anim.flipped) //setting width to negative flips image
-        anim.currentSprite.width = -anim.frame_width;
+        anim.currentSprite.width = -anim.frameWidth;
     else
-        anim.currentSprite.width = anim.frame_width;
+        anim.currentSprite.width = anim.frameWidth;
 
 
     if (anim.timer.getElapsedTime().asSeconds() > anim.switchTime) {
 
-        if (anim.currentSprite.left >= (anim.frameCount-1 + anim.flipped) * abs(anim.currentSprite.width) ) 
+        if (anim.currentSprite.left >= (anim.frameCount - 1 + anim.flipped) * abs(anim.currentSprite.width))
             anim.currentSprite.left = anim.flipped * abs(anim.currentSprite.width);
         else
             anim.currentSprite.left += abs(anim.currentSprite.width);
-        
+
         anim.timer.restart();
+
     }
 }
 
 
 
 void initLevel(Level& level) {
-    level.map_texture.loadFromFile("./assets/level/level_tileset.png");
-    level.background_texture.loadFromFile("./assets/level/back.png");
+    level.spritesheet.loadFromFile("./assets/level/level_tileset.png");
+    level.backgroundImage.loadFromFile("./assets/level/back.png");
     loadLevelFile(level);
-    
-    level.background.setTexture(level.background_texture);
+
+    level.background.setTexture(level.backgroundImage);
     level.background.setColor(Color(230, 230, 230, 255));
     level.background.setScale(3, 3);
     level.background.setOrigin(192, 120);
@@ -348,48 +351,48 @@ void initLevel(Level& level) {
         for (int j = 0; j < level.width; j++) {
 
             level.tiles[j + i * level.width].sprite.setPosition(j * TILE_WIDTH, i * TILE_WIDTH);
-            level.tiles[j + i * level.width].sprite.setTexture(level.map_texture);
+            level.tiles[j + i * level.width].sprite.setTexture(level.spritesheet);
             level.tiles[j + i * level.width].sprite.setScale(2, 2);
 
             switch (level.map_string.at(j + i * level.width)) {
-                case '1':
-                    level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16, 16, 16, 16));
-                    level.tiles[j + i * level.width].isSolid = true;
-					break;
-                case '2':
-                    level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16+32, 16, 16, 16));
-                    level.tiles[j + i * level.width].isSolid = true;
-                    break;
-                case '3':
-                    level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16+64, 16, 16, 16));
-                    level.tiles[j + i * level.width].isSolid = true;
-                    break;
-                case '4':
-                    level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16, 16+32, 16, 16));
-                    level.tiles[j + i * level.width].isSolid = true;
-                    break;
-                case '5':
-                    level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16+32, 16 + 32, 16, 16));
-                    level.tiles[j + i * level.width].isSolid = true;
-                    break;
-                case '6':
-                    level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16 + 64, 16 + 32, 16, 16));
-                    level.tiles[j + i * level.width].isSolid = true;
-                    break;
-                case '7': 
-                    level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16, 16 + 64, 16, 16));
-                    level.tiles[j + i * level.width].isSolid = true;
-                    break;
-                case '8':
-                    level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16 + 32, 16 + 64, 16, 16));
-                    level.tiles[j + i * level.width].isSolid = true;
-                    break;
-                case '9':
-                    level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16 + 64, 16 + 64, 16, 16));
-                    level.tiles[j + i * level.width].isSolid = true;
-                    break;
-                case 'C': break; // coin here, texture is "./assets/level/gem.png"
-                default: break;
+            case '1':
+                level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16, 16, 16, 16));
+                level.tiles[j + i * level.width].isSolid = true;
+                break;
+            case '2':
+                level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16 + 32, 16, 16, 16));
+                level.tiles[j + i * level.width].isSolid = true;
+                break;
+            case '3':
+                level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16 + 64, 16, 16, 16));
+                level.tiles[j + i * level.width].isSolid = true;
+                break;
+            case '4':
+                level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16, 16 + 32, 16, 16));
+                level.tiles[j + i * level.width].isSolid = true;
+                break;
+            case '5':
+                level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16 + 32, 16 + 32, 16, 16));
+                level.tiles[j + i * level.width].isSolid = true;
+                break;
+            case '6':
+                level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16 + 64, 16 + 32, 16, 16));
+                level.tiles[j + i * level.width].isSolid = true;
+                break;
+            case '7':
+                level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16, 16 + 64, 16, 16));
+                level.tiles[j + i * level.width].isSolid = true;
+                break;
+            case '8':
+                level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16 + 32, 16 + 64, 16, 16));
+                level.tiles[j + i * level.width].isSolid = true;
+                break;
+            case '9':
+                level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(16 + 64, 16 + 64, 16, 16));
+                level.tiles[j + i * level.width].isSolid = true;
+                break;
+            case 'C': break; // coin here, texture is "./assets/level/gem.png"
+            default: break;
             }
 
 
@@ -415,15 +418,15 @@ void updateLevel(Game& game) {
 
 void drawLevel(Game& game) {
 
-        game.window.draw(game.map.background);
-        for (int i = 0; i < game.map.height; i++) {
-            for (int j = 0; j < game.map.width; j++) {
+    game.window.draw(game.map.background);
+    for (int i = 0; i < game.map.height; i++) {
+        for (int j = 0; j < game.map.width; j++) {
 
-                Tile currentTile = game.map.tiles[j + i * game.map.width];
-                if (currentTile.isSolid || currentTile.isCoin) { //make sure sprite isn't empty
-                    game.window.draw(game.map.tiles[j + i * game.map.width].sprite);
-                }
-
+            Tile currentTile = game.map.tiles[j + i * game.map.width];
+            if (currentTile.isSolid || currentTile.isCoin) { //make sure sprite isn't empty
+                game.window.draw(game.map.tiles[j + i * game.map.width].sprite);
             }
+
         }
+    }
 }
