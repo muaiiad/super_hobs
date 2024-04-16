@@ -52,8 +52,8 @@ struct Player {
 
     Vector2f velocity;
     Vector2f acceleration;
-    float max_velocity = 300.0f;
-    float min_velocity = 20.0f;
+    float maxVelocity = 300.0f;
+    float minVelocity = 20.0f;
     bool isJumping = false;
 };
 
@@ -94,7 +94,6 @@ int main()
 
     Clock clock;
 
-
     while (game.window.isOpen()) {
         updateGame(game, clock.restart().asSeconds());
         game.window.clear();
@@ -119,7 +118,6 @@ void initGame(Game& game) {
 
 void updateGame(Game& game, float elapsed) {
 
-
     Event event;
     while (game.window.pollEvent(event))
     {
@@ -136,22 +134,6 @@ void updateGame(Game& game, float elapsed) {
         }
 
     }
-
-    if (Keyboard::isKeyPressed(Keyboard::Scan::D)) {
-        for (int i = 0; i < 3; i++)
-            game.player.anim[i].flipped = 0;
-
-        game.player.velocity.x += game.player.acceleration.x;
-
-    }
-
-    if (Keyboard::isKeyPressed(Keyboard::Scan::A)) {
-        for (int i = 0; i < 3; i++)
-            game.player.anim[i].flipped = 1;
-
-        game.player.velocity.x += game.player.acceleration.x * -1;
-    }
-
 
 
     updateLevel(game);
@@ -188,7 +170,6 @@ void initPlayer(Player& player) {
     player.anim[2].spritesheet.loadFromFile("./assets/player/spritesheet_jump.png");
     player.anim[2].switchTime = 0.5f;
     initAnimation(player.anim[2], 33, 32, 2);
-
 
     player.body.setTexture(player.anim[0].spritesheet);
     player.body.setTextureRect(player.anim[0].currentSprite);
@@ -227,7 +208,7 @@ void collisionX(Player& player, Level& level) {
 
     for (int i = vertical_pos; i <= vertical_pos; i++) {
         for (int j = left_tile; j <= right_tile; j++) {
-            Tile currentTile = level.tiles[j + i * level.width];
+            Tile &currentTile = level.tiles[j + i * level.width];
 
             if (currentTile.isSolid && player.hitbox.intersects(currentTile.sprite.getGlobalBounds())) {
 
@@ -248,7 +229,7 @@ void collisionY(Player& player, Level& level) { // no head collisions yet
     float horizontal_pos = player.hitbox.left / TILE_WIDTH;
 
     for (int j = horizontal_pos; j <= horizontal_pos + 1; j++) {
-        Tile currentTile = level.tiles[j + below_tile * level.width];
+        Tile &currentTile = level.tiles[j + below_tile * level.width];
 
         if (currentTile.isSolid && player.velocity.y >= 0 && player.hitbox.intersects(currentTile.sprite.getGlobalBounds())) {
 
@@ -263,13 +244,29 @@ void collisionY(Player& player, Level& level) { // no head collisions yet
 }
 
 void movePlayer(Player& player, Level& level, float elapsed) {
+
+    if (Keyboard::isKeyPressed(Keyboard::Scan::D)) {
+        for (int i = 0; i < 3; i++)
+            player.anim[i].flipped = 0;
+
+        player.velocity.x += player.acceleration.x;
+    }
+
+    if (Keyboard::isKeyPressed(Keyboard::Scan::A)) {
+        for (int i = 0; i < 3; i++)
+            player.anim[i].flipped = 1;
+
+        player.velocity.x += player.acceleration.x * -1;
+    }
+
+
     // friction is a percentage, so velocity never really reaches zero, this sets the velocity the velocity to zero once it reaches a small amount 
-    if (abs(player.velocity.x) < player.min_velocity)
+    if (abs(player.velocity.x) < player.minVelocity)
         player.velocity.x = 0;
 
 
-    if (abs(player.velocity.x) > player.max_velocity)
-        player.velocity.x = player.max_velocity * sign(player.velocity.x);
+    if (abs(player.velocity.x) > player.maxVelocity)
+        player.velocity.x = player.maxVelocity * sign(player.velocity.x);
 
     if (player.velocity.y > TERMINAL_VELOCITY)
         player.velocity.y = TERMINAL_VELOCITY;
@@ -345,6 +342,7 @@ void initLevel(Level& level) {
     level.background.setColor(Color(230, 230, 230, 255));
     level.background.setScale(3, 3);
     level.background.setOrigin(192, 120);
+
     level.tiles = new Tile[level.height * level.width];
 
     for (int i = 0; i < level.height; i++) {
@@ -422,7 +420,7 @@ void drawLevel(Game& game) {
     for (int i = 0; i < game.map.height; i++) {
         for (int j = 0; j < game.map.width; j++) {
 
-            Tile currentTile = game.map.tiles[j + i * game.map.width];
+            Tile &currentTile = game.map.tiles[j + i * game.map.width];
             if (currentTile.isSolid || currentTile.isCoin) { //make sure sprite isn't empty
                 game.window.draw(game.map.tiles[j + i * game.map.width].sprite);
             }
