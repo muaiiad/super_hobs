@@ -180,8 +180,8 @@ void initPlayer(Player& player) {
     player.debugger = RectangleShape(Vector2f(TILE_WIDTH, TILE_WIDTH));
     player.debugger.setFillColor(Color::Red);
 
-
     player.acceleration.x = 50;
+
 }
 
 void updatePlayer(Player& player, Level& level, float elapsed) {
@@ -194,11 +194,9 @@ void updatePlayer(Player& player, Level& level, float elapsed) {
     //player.debugger.setPosition(player.hitbox.left,player.hitbox.top);
     player.body.setTexture(player.anim[player.animationState].spritesheet);
     player.body.setTextureRect(player.anim[player.animationState].currentSprite);
-
 }
 
 void collisionX(Player& player, Level& level) {
-
 
     int left_tile = player.hitbox.getPosition().x / TILE_WIDTH;
     int right_tile = left_tile + 1;
@@ -216,10 +214,8 @@ void collisionX(Player& player, Level& level) {
                 player.hitbox.left = currentTile.sprite.getPosition().x - TILE_WIDTH * moveDirection;
 
             }
-
         }
     }
-
 }
 
 void collisionY(Player& player, Level& level) { // no head collisions yet
@@ -238,9 +234,7 @@ void collisionY(Player& player, Level& level) { // no head collisions yet
             player.hitbox.top = currentTile.sprite.getPosition().y - TILE_WIDTH;
 
         }
-
     }
-
 }
 
 void movePlayer(Player& player, Level& level, float elapsed) {
@@ -341,7 +335,7 @@ void initLevel(Level& level) {
     level.background.setTexture(level.backgroundImage);
     level.background.setColor(Color(230, 230, 230, 255));
     level.background.setScale(3, 3);
-    level.background.setOrigin(192, 120);
+    level.background.setOrigin(192, 120); // set origin to center instead of top left
 
     level.tiles = new Tile[level.height * level.width];
 
