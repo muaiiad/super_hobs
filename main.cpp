@@ -37,7 +37,7 @@ struct Level {
     Clock timer;
     std::string map_string;
     Texture spritesheet;
-    Tile* tiles;
+    Tile* tiles = nullptr;
     Texture backgroundImage;
     Sprite background;
 };
