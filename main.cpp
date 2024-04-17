@@ -37,7 +37,7 @@ struct Level {
     Clock timer;
     std::string map_string;
     Texture spritesheet;
-    Tile* tiles = nullptr;
+    Tile* tiles = nullptr; //dynamic array
     Texture backgroundImage;
     Sprite background;
 };
@@ -136,13 +136,13 @@ void updateGame(Game& game, float elapsed) {
     }
 
 
-    updateLevel(game);
     updatePlayer(game.player, game.map, elapsed);
-
 
     int cameraX = round(game.player.hitbox.left + (3 * TILE_WIDTH));
     int cameraY = round(9 * TILE_WIDTH);
     game.camera.setCenter(cameraX, cameraY); // must be integers or else strange lines appear
+
+    updateLevel(game);
 
 }
 
