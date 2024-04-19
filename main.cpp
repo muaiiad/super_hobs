@@ -7,7 +7,7 @@ using namespace sf;
 const float TILE_WIDTH = 32;
 
 const float FRICTION = 0.91f;
-const float GRAVITY = 25.0f;
+const float GRAVITY = 2200.0f;
 const float TERMINAL_VELOCITY = 500.0f; //maximum vertical velocity
 
 int sign(const int& num) {
@@ -55,6 +55,8 @@ struct Player {
     float maxVelocity = 300.0f;
     float minVelocity = 20.0f;
     bool isJumping = false;
+    bool canFly = false;
+    bool canThrow = false;
 };
 
 struct Game {
@@ -96,7 +98,7 @@ int main()
 
     while (game.window.isOpen()) {
         updateGame(game, clock.restart().asSeconds());
-        game.window.clear();
+        game.window.clear(Color::Black);
         drawGame(game);
     }
 
@@ -107,7 +109,7 @@ int main()
 
 void initGame(Game& game) {
     game.window.create(VideoMode(1536, 864), "Super Hobs");
-    game.window.setFramerateLimit(120);
+    game.window.setFramerateLimit(90);
 
     game.camera.setCenter(Vector2f(350.f, 300.f));
     game.camera.setSize(Vector2f(1056, 594));
@@ -135,11 +137,19 @@ void updateGame(Game& game, float elapsed) {
 
     }
 
-
+    
     updatePlayer(game.player, game.map, elapsed);
 
     int cameraX = round(game.player.hitbox.left + (3 * TILE_WIDTH));
     int cameraY = round(9 * TILE_WIDTH);
+
+    const int left_boundary = 528, right_boundary = 2000;
+    if (cameraX < left_boundary) 
+        cameraX = left_boundary;
+
+    if (cameraX > right_boundary)
+        cameraX = right_boundary;
+
     game.camera.setCenter(cameraX, cameraY); // must be integers or else strange lines appear
 
     updateLevel(game);
@@ -185,9 +195,9 @@ void initPlayer(Player& player) {
 }
 
 void updatePlayer(Player& player, Level& level, float elapsed) {
-    player.velocity.y += GRAVITY;
+    player.velocity.y += GRAVITY * elapsed;
     player.velocity.x *= FRICTION;
-
+    
     movePlayer(player, level, elapsed);
     updatePlayerAnimation(player);
 
@@ -197,6 +207,12 @@ void updatePlayer(Player& player, Level& level, float elapsed) {
 }
 
 void collisionX(Player& player, Level& level) {
+    
+    if (player.hitbox.left < 0) {
+        player.velocity.x = 0;
+        player.hitbox.left = 0;
+    }
+        
 
     int left_tile = player.hitbox.getPosition().x / TILE_WIDTH;
     int right_tile = left_tile + 1;
@@ -214,6 +230,10 @@ void collisionX(Player& player, Level& level) {
                 player.hitbox.left = currentTile.sprite.getPosition().x - TILE_WIDTH * moveDirection;
 
             }
+            
+
+
+
         }
     }
 }
@@ -223,6 +243,10 @@ void collisionY(Player& player, Level& level) { // no head collisions yet
     int above_tile = player.hitbox.top / TILE_WIDTH;
     int below_tile = above_tile + 1;
     float horizontal_pos = player.hitbox.left / TILE_WIDTH;
+
+    if (player.hitbox.top < 0)
+        player.hitbox.top = 0;
+
 
     for (int j = horizontal_pos; j <= horizontal_pos + 1; j++) {
         Tile &currentTile = level.tiles[j + below_tile * level.width];
@@ -253,6 +277,10 @@ void movePlayer(Player& player, Level& level, float elapsed) {
         player.velocity.x += player.acceleration.x * -1;
     }
 
+    if (Keyboard::isKeyPressed(Keyboard::Scan::Space) && player.canFly) {
+        player.velocity.y = -400;
+    }
+
 
     // friction is a percentage, so velocity never really reaches zero, this sets the velocity the velocity to zero once it reaches a small amount 
     if (abs(player.velocity.x) < player.minVelocity)
@@ -280,6 +308,7 @@ void updatePlayerAnimation(Player& player) {
     if (abs(player.velocity.x) > 0 && player.velocity.y == 0)
         player.animationState = 1;
 
+    updateAnimation(player.anim[player.animationState]);
 
     if (player.velocity.y < 0) {
         player.anim[2].currentSprite.left = 0 + (player.anim[2].flipped * 32);
@@ -293,7 +322,6 @@ void updatePlayerAnimation(Player& player) {
         player.animationState = 2;
     }
 
-    updateAnimation(player.anim[player.animationState]);
 
 }
 
@@ -396,7 +424,7 @@ void initLevel(Level& level) {
 void loadLevelFile(Level& level) {
     std::ifstream levelFile("./assets/level/level1.txt", std::ios::in);
     std::string temp;
-
+    
     for (int i = 0; i < level.height && !levelFile.eof(); i++) {
         levelFile >> temp;
         level.map_string += temp;
