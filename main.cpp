@@ -12,8 +12,6 @@ const float GRAVITY = 2200.0f;
 const float TERMINAL_VELOCITY = 500.0f; //maximum vertical velocity
 
 
-
-
 int sign(const int& num) {
     return (num > 0 ? 1 : -1);
 }
@@ -45,9 +43,11 @@ struct Level {
     int countdown_timer = 120;
 
     std::string map_string;
+
     Texture spritesheet;
     Texture feather;
     Texture txCoin;
+
     Tile* tiles = nullptr; //dynamic array
     Texture backgroundImage;
     Sprite background;
@@ -237,6 +237,8 @@ void initPlayer(Player& player) {
 void updatePlayer(Player& player, Level& level, float elapsed) {
     player.velocity.y += GRAVITY * elapsed;
     player.velocity.x *= FRICTION;
+
+
     
     movePlayer(player, level, elapsed);
     updatePlayerAnimation(player);
@@ -284,6 +286,7 @@ void collisionX(Player& player, Level& level) {
                 level.coinSound.setBuffer(level.coinBuffer);
                 level.coinSound.play();
             }
+
 
         }
     }
@@ -492,13 +495,13 @@ void initLevel(Level& level,Font &font) {
                 break;
             case 'F':
                 level.tiles[j + i * level.width].sprite.setTexture(level.feather);
-                level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(0,0, 16, 16));
+                level.tiles[j + i * level.width].sprite.setTextureRect(IntRect(0, 0, 16, 16));
                 level.tiles[j + i * level.width].isPowerup = true;
                 break;
             case 'C':
                 level.tiles[j + i * level.width].coin.setTextureRect(IntRect(0, 0, 16, 16));
                 level.tiles[j + i * level.width].isCoin = true;
-                break; 
+                break;
             default: break;
             }
 
