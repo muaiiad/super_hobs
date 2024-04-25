@@ -245,8 +245,6 @@ void updatePlayer(Player& player, Level& level, float elapsed) {
     player.body.setTexture(player.anim[player.animationState].spritesheet);
     player.body.setTextureRect(player.anim[player.animationState].currentSprite);
     player.wings.setTextureRect(player.wingsAnimation.currentSprite);
-
-
 }
 
 void collisionX(Player& player, Level& level) {
@@ -257,9 +255,9 @@ void collisionX(Player& player, Level& level) {
     }
         
     
-    int left_tile = player.hitbox.getPosition().x / TILE_WIDTH;
+    int left_tile = player.hitbox.left / TILE_WIDTH;
     int right_tile = left_tile + 1;
-    int vertical_pos = player.hitbox.getPosition().y / TILE_WIDTH;
+    int vertical_pos = player.hitbox.top / TILE_WIDTH;
 
     int moveDirection = sign(player.velocity.x);
 
@@ -297,7 +295,7 @@ void collisionY(Player& player, Level& level) { // no head collisions yet
     int below_tile = above_tile + 1;
     float horizontal_pos = player.hitbox.left / TILE_WIDTH;
 
-    if (player.hitbox.top < 0)
+    if (player.hitbox.top <= 0)
         player.hitbox.top = 0;
 
     for (int j = horizontal_pos; j <= horizontal_pos + 1; j++) {
@@ -435,12 +433,12 @@ void initLevel(Level& level,Font &font) {
     level.background.setOrigin(192, 120); // set origin to center instead of top left
 
     level.score_text.setFont(font);
-    level.score_text.setCharacterSize(48);
+    level.score_text.setCharacterSize(32);
     level.score_text.setFillColor(Color::White);
 
     level.timer_text.setFont(font);
     level.timer_text.setPosition(0, 0);
-    level.timer_text.setCharacterSize(48);
+    level.timer_text.setCharacterSize(32);
 
     level.tiles = new Tile[level.height * level.width];
 
@@ -453,6 +451,7 @@ void initLevel(Level& level,Font &font) {
 
             level.tiles[j + i * level.width].coin.setPosition(j * TILE_WIDTH, i * TILE_WIDTH);
             level.tiles[j + i * level.width].coin.setTexture(level.txCoin);
+            level.tiles[j + i * level.width].coin.setScale(2, 2);
 
             switch (level.map_string.at(j + i * level.width)) {
             case '1':
@@ -498,7 +497,6 @@ void initLevel(Level& level,Font &font) {
                 break;
             case 'C':
                 level.tiles[j + i * level.width].coin.setTextureRect(IntRect(0, 0, 16, 16));
-                level.tiles[j + i * level.width].coin.setScale(2, 2);
                 level.tiles[j + i * level.width].isCoin = true;
                 break; 
             default: break;
@@ -522,12 +520,12 @@ void loadLevelFile(Level& level) {
 }
 
 void updateLevel(Game& game) {
-    game.map.score_text.setPosition(round(game.camera.getCenter().x-100), 0);
-    game.map.score_text.setString("SCORE: " + std::to_string(game.player.score));
+    game.map.score_text.setPosition(round(game.camera.getCenter().x-75), 0);
+    game.map.score_text.setString("SCORE\n   " + std::to_string(game.player.score));
 
     if (game.map.timer.getElapsedTime().asSeconds() >= 1) {
         game.map.countdown_timer--;
-        game.map.timer_text.setString("TIME: " + std::to_string(game.map.countdown_timer));
+        game.map.timer_text.setString("TIME\n " + std::to_string(game.map.countdown_timer));
         game.map.timer.restart();
         if (game.map.countdown_timer <= 0)
             game.window.close();
