@@ -32,6 +32,15 @@ void drawMenu(Menu& menu, RenderWindow& window);
 void movedown(Menu& menu);
 void moveup(Menu& menu);
 
+struct Projectile {
+    Texture bullets_tx;
+    Sprite bullets_sprite;
+    int direction; // 1-->right , 2-->left
+    int last_key;
+    float velocity = 0;
+    bool together = true;
+};
+
 
 struct Animation {
     Texture spritesheet;
@@ -107,7 +116,7 @@ struct Player {
     float minVelocity = 20.0f;
     bool isJumping = false;
     bool canFly = false;
-    bool canThrow = false;
+    bool canThrow = true;
 };
 
 struct Enemy {
@@ -145,14 +154,6 @@ struct Game {
     Bear bear;
 };
 
-struct Projectile {
-    Texture bullets_tx;
-    Sprite bullets_sprite;
-    int direction; // 1-->right , 2-->left
-    int last_key;
-    float velocity = 0;
-    bool together = true;
-};
 
 
 
@@ -403,7 +404,7 @@ void initPlayer(Player& player) {
 
     player.acceleration.x = 50;
 
-    player.bullet.bullets_tx.loadFromFile("projectile.png");
+    player.bullet.bullets_tx.loadFromFile("./assets/player/projectile.png");
     player.bullet.bullets_sprite.setTexture(player.bullet.bullets_tx);
     player.bullet.bullets_sprite.setScale(0.8, 0.8);
 }
@@ -430,6 +431,7 @@ void updatePlayer(Player& player, Level& level, float elapsed) {
     if (player.bullet.together)
         player.bullet.bullets_sprite.setPosition(player.hitbox.getPosition().x + 9, player.hitbox.getPosition().y);
     else {
+        std::cout << player.bullet.last_key << std::endl;
         if (player.bullet.last_key == 1)
             player.bullet.bullets_sprite.move(player.bullet.velocity, 0);
         if (player.bullet.last_key == 2)
@@ -621,7 +623,7 @@ void movePlayer(Player& player, Level& level, float elapsed) {
         player.velocity.y = -400;
     }
 
-    if (Keyboard::isKeyPressed(Keyboard::Scan::Enter) && player.canThrow) {
+    if (Keyboard::isKeyPressed(Keyboard::Scan::F) && player.canThrow) {
         player.canThrow = false;
         player.bullet.together = false;
         player.bullet.velocity = 5;
@@ -1247,6 +1249,12 @@ void CollisionPlayerWithEnemy(Enemy& enemy, Player& player)
         player.velocity.x = 500 * -moveDirection;
         player.health--;
     }
+
+    if (enemy.body.getGlobalBounds().intersects(player.bullet.bullets_sprite.getGlobalBounds())) {
+        enemy.isalive = 0;
+        player.bullet.together = 1;
+        player.canThrow = true;
+    }
 }
 
 void CollisionPlayerWithEnemy(Bear& bear, Player& player)
@@ -1264,6 +1272,12 @@ void CollisionPlayerWithEnemy(Bear& bear, Player& player)
         player.hitbox.left = bear.body.getPosition().x - 32 * moveDirection;
         player.velocity.x = 500 * -moveDirection;
         player.health--;
+    }
+
+    if (bear.body.getGlobalBounds().intersects(player.bullet.bullets_sprite.getGlobalBounds())) {
+        bear.health-= 100;
+        player.bullet.together = 1;
+        player.canThrow = true;
     }
 }
 
