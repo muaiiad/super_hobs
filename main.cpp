@@ -99,6 +99,8 @@ struct Player {
     int score = 0;
     int health = 3;
 
+    Projectile bullet;
+
     Vector2i velocity;
     Vector2i acceleration;
     float maxVelocity = 300.0f;
@@ -143,6 +145,15 @@ struct Game {
     Bear bear;
 };
 
+struct Projectile {
+    Texture bullets_tx;
+    Sprite bullets_sprite;
+    int direction; // 1-->right , 2-->left
+    int last_key;
+    float velocity = 0;
+    bool together = true;
+};
+
 
 
 void initGame(Game& game);
@@ -154,6 +165,7 @@ void movePlayer(Player& player, Level& level, float elapsed);
 void updatePlayer(Player& player, Level& level, float elapsed);
 void updatePlayerAnimation(Player& player);
 void collisionX(Player& player, Level& level);
+void collisionX(Projectile& bullet, Level& level, Player& player);
 bool collisionY(Player& player, Level& level);
 bool collisionHead(Player& player, Level& level);
 void drawPlayer(Game& game);
@@ -391,6 +403,9 @@ void initPlayer(Player& player) {
 
     player.acceleration.x = 50;
 
+    player.bullet.bullets_tx.loadFromFile("projectile.png");
+    player.bullet.bullets_sprite.setTexture(player.bullet.bullets_tx);
+    player.bullet.bullets_sprite.setScale(0.8, 0.8);
 }
 
 void updatePlayer(Player& player, Level& level, float elapsed) {
@@ -399,6 +414,8 @@ void updatePlayer(Player& player, Level& level, float elapsed) {
         gameover = 1;
     player.velocity.y += GRAVITY * elapsed;
     player.velocity.x *= FRICTION;
+
+    collisionX(player.bullet, level, player);
 
 
     if (move_player)
@@ -410,6 +427,14 @@ void updatePlayer(Player& player, Level& level, float elapsed) {
     player.body.setTexture(player.anim[player.animationState].spritesheet);
     player.body.setTextureRect(player.anim[player.animationState].currentSprite);
     player.wings.setTextureRect(player.wingsAnimation.currentSprite);
+    if (player.bullet.together)
+        player.bullet.bullets_sprite.setPosition(player.hitbox.getPosition().x + 9, player.hitbox.getPosition().y);
+    else {
+        if (player.bullet.last_key == 1)
+            player.bullet.bullets_sprite.move(player.bullet.velocity, 0);
+        if (player.bullet.last_key == 2)
+            player.bullet.bullets_sprite.move(-1 * player.bullet.velocity, 0);
+    }
 }
 
 
@@ -470,6 +495,31 @@ void collisionX(Player& player, Level& level) {
                 Win = true;  //Change case when flag hit
             }
 
+
+        }
+    }
+}
+
+void collisionX(Projectile& bullet, Level& level, Player& player) {
+
+
+
+    int left_tile = bullet.bullets_sprite.getPosition().x / TILE_WIDTH;
+    int right_tile = left_tile + 1;
+    int vertical_pos = bullet.bullets_sprite.getPosition().y / TILE_WIDTH;
+
+    //int moveDirection = sign(player.velocity.x);
+
+
+    for (int i = vertical_pos; i <= vertical_pos; i++) {
+        for (int j = left_tile; j <= right_tile; j++) {
+            Tile& currentTile = level.tiles[j + i * level.width];
+
+            if (currentTile.isSolid && bullet.bullets_sprite.getGlobalBounds().intersects(currentTile.sprite.getGlobalBounds())) {
+                bullet.together = true;
+                player.canThrow = true;
+
+            }
 
         }
     }
@@ -538,6 +588,8 @@ bool collisionHead(Player& player, Level& level) {
 void drawPlayer(Game& game) {
     if (game.player.canFly)
         game.window.draw(game.player.wings);
+
+    game.window.draw(game.player.bullet.bullets_sprite);
     
     game.window.draw(game.player.body);
     //game.window.draw(game.player.debugger);
@@ -549,7 +601,8 @@ void movePlayer(Player& player, Level& level, float elapsed) {
         for (int i = 0; i < 3; i++) {
             player.anim[i].flipped = 0;
         }
-            player.wingsAnimation.flipped = 0;
+        player.bullet.direction = 1;
+        player.wingsAnimation.flipped = 0;
 
         player.velocity.x += player.acceleration.x;
     }
@@ -560,12 +613,19 @@ void movePlayer(Player& player, Level& level, float elapsed) {
         }
             player.wingsAnimation.flipped = 1;
 
-
+        player.bullet.direction = 2;
         player.velocity.x += player.acceleration.x * -1;
     }
 
     if (Keyboard::isKeyPressed(Keyboard::Scan::Space) && player.canFly) {
         player.velocity.y = -400;
+    }
+
+    if (Keyboard::isKeyPressed(Keyboard::Scan::Enter) && player.canThrow) {
+        player.canThrow = false;
+        player.bullet.together = false;
+        player.bullet.velocity = 5;
+        player.bullet.last_key = player.bullet.direction;
     }
 
 
