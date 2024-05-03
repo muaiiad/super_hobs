@@ -340,6 +340,8 @@ void updateGame(Game& game, float elapsed) {
                     game.player.hitbox.left = 0;
                     initLevel(game.map[game.currentMap], game.font, game.currentMap + 1);
                     gameover = 0;
+                    move_player = 1;
+                    game.player.health = 3;
                 }
                 if (event.key.code == Keyboard::Escape) {
                     game.player.hitbox.top = 0;
@@ -347,6 +349,7 @@ void updateGame(Game& game, float elapsed) {
                     initLevel(game.map[game.currentMap], game.font, game.currentMap + 1);
                     gameover = 0;
                     pagenum = 10;
+                    game.player.health = 3;
                 }
 
             }
@@ -954,10 +957,13 @@ void initLevel(Level& level,Font &font,int i) {
         initbear(level.bear,Vector2f(1600,0));
         level.bear.isalive = 0;
         initEnemy(level.enemy,Vector2f(1600,0));
+        level.enemy.isalive = 1;
     }
     else if (i == 2) {
         initbear(level.bear, Vector2f(3200, 0));
+        level.bear.isalive = 1;
         initEnemy(level.enemy, Vector2f(32*42, 0));
+        level.enemy.isalive = 1;
     }
 
 }
@@ -985,7 +991,7 @@ void updateLevel(Game& game,float elapsed) {
         game.map[game.currentMap].timer_text.setString("TIME\n " + std::to_string(game.map[game.currentMap].countdown_timer));
         game.map[game.currentMap].timer.restart();
         if (game.map[game.currentMap].countdown_timer <= 0)
-            game.window.close();
+            gameover = 1;
     }
 
     game.map[game.currentMap].timer_text.setPosition(round(game.camera.getCenter().x + 200), 0);
