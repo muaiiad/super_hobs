@@ -11,6 +11,7 @@ const int LEVEL_TIMER = 60;
 bool move_player = true;
 bool Win = false;
 bool gameover = 0;
+bool secondLevelUnlocked = false;
 
 const float FRICTION = 0.91f;
 const float GRAVITY = 2200.0f;
@@ -138,6 +139,7 @@ struct Player {
 
     int score = 0;
     int health = 3;
+    int lives = 1;
 
     Projectile bullet;
 
@@ -317,7 +319,7 @@ void updateGame(Game& game, float elapsed) {
                 game.player.velocity.y = -800.0f;
                 game.player.jumpSound.play();
             }
-            if (event.key.code == Keyboard::Escape && !gameover) {
+            if (event.key.code == Keyboard::Escape && !gameover && !Win) {
                 game.pause = !game.pause;
             }
             if (event.key.code == Keyboard::Enter) {
@@ -336,6 +338,9 @@ void updateGame(Game& game, float elapsed) {
 
             if (gameover) {
                 if (event.key.code == Keyboard::R) {
+                    if (game.player.lives == 0) {
+                        pagenum = 10;
+                    }
                     game.player.hitbox.top = 0;
                     game.player.hitbox.left = 0;
                     initLevel(game.map[game.currentMap], game.font, game.currentMap + 1);
@@ -362,6 +367,7 @@ void updateGame(Game& game, float elapsed) {
                     initLevel(game.map[game.currentMap], game.font, game.currentMap + 1);
                     gameover = 0;
                     pagenum = 10;
+                    Win = false;
                 }
 
             }
@@ -487,16 +493,32 @@ void initPlayer(Player& player) {
     player.bullet.bullets_tx.loadFromFile("./assets/player/projectile.png");
     player.bullet.bullets_sprite.setTexture(player.bullet.bullets_tx);
     player.bullet.bullets_sprite.setScale(0.8, 0.8);
+
+    player.canFly = false;
 }
 
 void updatePlayer(Player& player, Level& level, float elapsed) {
-
-    if (player.health <= 0)
+    std::cout << player.lives << std::endl;
+    if (player.health <= 0) {
         gameover = 1;
+        player.lives--;
+    }
+
+    if (player.lives <= 0) {
+        std::cout << "out of lives\n";
+        secondLevelUnlocked = false;
+        player.lives = 1;
+        player.score = 0;
+    }
     player.velocity.y += GRAVITY * elapsed;
     player.velocity.x *= FRICTION;
 
     collisionX(player.bullet, level, player);
+
+    if (player.score >= 10) {
+        player.score = 0;
+        player.lives++;
+    }
 
 
     if (move_player)
@@ -558,6 +580,9 @@ void collisionX(Player& player, Level& level) {
 
 
             if (currentTile.isPowerup && !player.canFly && collided) {
+                level.powerBuffer.loadFromFile("./assets/audio/powerup.wav");
+                level.powerSound.setBuffer(level.powerBuffer);
+                level.powerSound.play();
                 player.canFly = true;
                 currentTile.isPowerup = false;
             }
@@ -621,8 +646,10 @@ bool collisionY(Player& player, Level& level) { // no head collisions yet
     if (player.hitbox.top <= 0)
         player.hitbox.top = 0;
 
-    if (player.hitbox.top >= 20 * 32)
+    if (player.hitbox.top >= 21 * 32) {
         gameover = true;
+        player.lives--;
+    }
 
     for (int j = horizontal_pos; j <= horizontal_pos + 1; j++) {
         Tile& currentTile = level.tiles[j + below_tile * level.width];
@@ -643,6 +670,7 @@ bool collisionY(Player& player, Level& level) { // no head collisions yet
             player.velocity.y = 0;
             player.hitbox.top = currentTile.sprite.getPosition().y - TILE_WIDTH;
             gameover = 1;
+            player.lives--;
         }
 
     }
@@ -835,7 +863,7 @@ void initLevel(Level& level,Font &font,int i) {
 
     level.win_text.setFont(font);
     level.win_text.setString("YOU WIN!");
-    level.win_text.setCharacterSize(100);
+    level.win_text.setCharacterSize(96);
     level.win_text.setFillColor(Color::Black);
 
     level.tiles = new Tile[level.height * level.width];
@@ -956,7 +984,7 @@ void initLevel(Level& level,Font &font,int i) {
     if (i == 1) {
         initbear(level.bear,Vector2f(1600,0));
         level.bear.isalive = 0;
-        initEnemy(level.enemy,Vector2f(1600,0));
+        initEnemy(level.enemy,Vector2f(55*32,14*32));
         level.enemy.isalive = 1;
     }
     else if (i == 2) {
@@ -982,7 +1010,7 @@ void loadLevelFile(Level& level,int i) {
 
 void updateLevel(Game& game,float elapsed) {
     game.map[game.currentMap].score_text.setPosition(round(game.camera.getCenter().x-75), 0);
-    game.map[game.currentMap].score_text.setString("SCORE\n   " + std::to_string(game.player.score));
+    game.map[game.currentMap].score_text.setString("SCORE\t  LIVES\n  " + std::to_string(game.player.score) + "\t\t\t" + std::to_string(game.player.lives));
 
     if (game.map[game.currentMap].timer.getElapsedTime().asSeconds() >= 1) {
         if (Win != true) // stopping timer
@@ -1000,12 +1028,15 @@ void updateLevel(Game& game,float elapsed) {
     game.map[game.currentMap].background.setPosition(game.camera.getCenter());
 
     if (Win) {
-        game.map[game.currentMap].score_text.setFillColor(Color::Black);
-        game.map[game.currentMap].timer_text.setFillColor(Color::Black);
+        game.map[game.currentMap].score_text.setFillColor(Color::White);
+        game.map[game.currentMap].timer_text.setFillColor(Color::White);
         game.map[game.currentMap].timer_text.setString("TIME\n " + std::to_string(LEVEL_TIMER - game.map[game.currentMap].countdown_timer));
         game.map[game.currentMap].win_text.setPosition(round(game.camera.getCenter().x) - 200, game.camera.getCenter().y - 150);
         game.map[game.currentMap].timer_text.setPosition(round(game.camera.getCenter().x + 50), game.camera.getCenter().y - 50);
         game.map[game.currentMap].score_text.setPosition(round(game.camera.getCenter().x) - 200, game.camera.getCenter().y - 50);
+        if (game.currentMap == 0) {
+            secondLevelUnlocked = true;
+        }
     }
 
     updateBear(game.map[game.currentMap].bear, game.map[game.currentMap],elapsed);
@@ -1132,7 +1163,13 @@ void updateMenu(Menu& menu, RenderWindow& window) {
                 movedown(menu);
             }
             if (event.key.code == Keyboard::Enter) {
-                pagenum = menu.selected;
+                if (menu.selected == 1) {
+                    if (secondLevelUnlocked == true) {
+                        pagenum = menu.selected;
+                    }
+                } else {
+                    pagenum = menu.selected;
+                }
             }
         }
 
