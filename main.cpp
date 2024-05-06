@@ -85,6 +85,7 @@ struct Bear {
     int health;
     int animationState = 0;
     bool isalive = true;
+    Clock jumpTimer;
 };
 
 struct Level {
@@ -995,6 +996,12 @@ void movebear(Bear& bear, Level level, float elapsed) {
     collisionY(bear, level);
 }
 void updateBear(Bear& bear, Level& level, float elapsed) {
+
+    if (bear.jumpTimer.getElapsedTime().asSeconds() > 3.0f) {
+        bear.velocity.y = -800;
+        bear.jumpTimer.restart();
+    }
+
     if (bear.health <= 0)
         bear.isalive = false;
     updatebearAnimation(bear);
@@ -1029,6 +1036,10 @@ void collisionY(Bear& bear, Level& level) {
     int above_tile = bear.body.getPosition().y / TILE_WIDTH;
     int below_tile = above_tile + 3;
     float horizontal_pos = bear.body.getPosition().x / TILE_WIDTH;
+
+    if (bear.body.getPosition().y < 0)
+        bear.body.setPosition(bear.body.getPosition().x, 0);
+
     if (below_tile < 0)
         below_tile = 0;
     //for Y collisions we need to check the tiles it covers horizontally and the ones below
