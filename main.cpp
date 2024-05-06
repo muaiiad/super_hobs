@@ -25,17 +25,12 @@ int pagenum = 10;
 
 struct Menu {
     Text mainmenu[3];
+    Text instructionsText;
     Font font;
     int selected = 0;
     Sprite background;
     Texture backgroundTexture;
 };
-
-void makeMenu(Menu& menu, float width, float height);
-void updateMenu(Menu& menu, RenderWindow& window);
-void drawMenu(Menu& menu, RenderWindow& window);
-void movedown(Menu& menu);
-void moveup(Menu& menu);
 
 struct Projectile {
     Texture bullets_tx;
@@ -135,7 +130,6 @@ struct Player {
     Sprite body;
     FloatRect hitbox;
     FloatRect headPoint;
-    RectangleShape debugger; //red square that shows the hitbox of the player which is smaller than the actual sprite
 
     Animation anim[4];
     Animation wingsAnimation;
@@ -181,6 +175,11 @@ struct Game {
     RectangleShape blur;
 };
 
+void makeMenu(Menu& menu, float width, float height);
+void updateMenu(Menu& menu, RenderWindow& window);
+void drawMenu(Menu& menu, RenderWindow& window);
+void movedown(Menu& menu);
+void moveup(Menu& menu);
 
 void initGame(Game& game);
 void updateGame(Game& game, float elapsed);
@@ -204,7 +203,6 @@ void collisionX(Enemy& enemy, Level& level);
 void collisionY(Enemy& enemy, Level& level);
 void drawEnemy(Game& game);
 void CollisionPlayerWithEnemy(Enemy& enemy, Player& player);
-void CollisionPlayerWithEnemy(Bear& bear, Player& player);
 
 void initbear(Bear& bear, Vector2f position);
 void movebear(Bear& bear, Level level, float elapsed);
@@ -213,6 +211,7 @@ void updatebearAnimation(Bear& bear);
 void drawBear(Game& game);
 void collisionX(Bear& bear, Level& level);
 void collisionY(Bear& bear, Level& level);
+void CollisionPlayerWithEnemy(Bear& bear, Player& player);
 
 void initAnimation(Animation& anim, int width, int height, int frameCount);
 void updateAnimation(Animation& anim);
@@ -230,13 +229,11 @@ int main() {
     initGame(game);
     makeMenu(menu, 1056, 594);
     
-
     Clock clock;
 
     while (game.window.isOpen()) {
         switch (pagenum) {
         case 0:
-            game.currentMap = 0;
             if (clock.getElapsedTime().asSeconds() > 0.2f)
                 clock.restart();
             updateGame(game, clock.restart().asSeconds());
@@ -244,14 +241,15 @@ int main() {
             drawGame(game);
             break;
         case 1:
-            break;
-        case 2:
-            game.window.close();
-            break;
+            
         case 10:
             updateMenu(menu, game.window);
             game.window.clear(Color::Black);
             drawMenu(menu, game.window);
+            break;
+        case 2:
+            game.window.close();
+            break;
         }
         game.window.display();
     }
@@ -263,6 +261,102 @@ int main() {
     return 0;
 }
 
+
+void makeMenu(Menu& menu, float width, float height) {
+    menu.font.loadFromFile("./assets/font.ttf");
+
+    menu.mainmenu[0].setFont(menu.font);
+    menu.mainmenu[0].setFillColor(Color(85, 140, 250, 255));
+    menu.mainmenu[0].setString("Play");
+    menu.mainmenu[0].setCharacterSize(96);
+    menu.mainmenu[0].setOrigin(menu.mainmenu[0].getLocalBounds().width/2, menu.mainmenu[0].getLocalBounds().height/2);
+    menu.mainmenu[0].setPosition(Vector2f(1536/2, 864/2-150));
+
+    menu.mainmenu[1].setFont(menu.font);
+    menu.mainmenu[1].setFillColor(Color::White);
+    menu.mainmenu[1].setString("Instructions");
+    menu.mainmenu[1].setCharacterSize(96);
+    menu.mainmenu[1].setOrigin(menu.mainmenu[1].getLocalBounds().width / 2, menu.mainmenu[1].getLocalBounds().height / 2);
+    menu.mainmenu[1].setPosition(Vector2f(1536 / 2+10, 864 / 2));
+
+    menu.mainmenu[2].setFont(menu.font);
+    menu.mainmenu[2].setFillColor(Color::White);
+    menu.mainmenu[2].setString("Exit");
+    menu.mainmenu[2].setCharacterSize(96);
+    menu.mainmenu[2].setOrigin(menu.mainmenu[2].getLocalBounds().width / 2, menu.mainmenu[2].getLocalBounds().height / 2);
+    menu.mainmenu[2].setPosition(Vector2f(1536/2, 864 / 2 + 150));
+
+    menu.backgroundTexture.loadFromFile("./assets/background.png");
+    menu.background.setTexture(menu.backgroundTexture);
+
+    menu.instructionsText.setFont(menu.font);
+    menu.instructionsText.setString(
+        "A, D - Move left and right\nW - Jump\nSpace - Fly\nF - Throw Projectile" 
+    );
+    menu.instructionsText.setFillColor(Color::White);
+    menu.instructionsText.setCharacterSize(48);
+    menu.instructionsText.setOrigin(menu.instructionsText.getLocalBounds().width / 2, menu.instructionsText.getLocalBounds().height / 2);
+    menu.instructionsText.setPosition(1536 / 2, 864 / 2);
+
+}
+void drawMenu(Menu& menu, RenderWindow& window) {
+    window.setView(window.getDefaultView());
+    window.draw(menu.background);
+    if (pagenum == 10) {
+        for (int i = 0; i < 3; i++) {
+        window.draw(menu.mainmenu[i]);
+    }
+    }
+    else if (pagenum == 1) {
+        window.draw(menu.instructionsText);
+    }
+
+}
+void movedown(Menu& menu) {
+
+	menu.mainmenu[menu.selected].setFillColor(Color::White);
+	menu.selected++;
+	if (menu.selected > 2) 
+		menu.selected = 0;
+	menu.mainmenu[menu.selected].setFillColor(Color(85, 140, 250, 255));
+}
+void moveup(Menu& menu) {
+
+	menu.mainmenu[menu.selected].setFillColor(Color::White);
+	menu.selected--;
+	if (menu.selected < 0) 
+		menu.selected = 2;
+	menu.mainmenu[menu.selected].setFillColor(Color(85, 140, 250, 255));
+
+}
+void updateMenu(Menu& menu, RenderWindow& window) {
+    Event event;
+    std::string name;
+
+    while (window.pollEvent(event))
+    {
+        if (event.type == Event::Closed) {
+            window.close();
+            break;
+        }
+        if (event.type == Event::KeyPressed) {
+            if (event.key.code == Keyboard::Up) {
+                moveup(menu);
+            }
+            if (event.key.code == Keyboard::Down) {
+                movedown(menu);
+            }
+            if (event.key.code == Keyboard::Enter) {
+                pagenum = menu.selected;
+            }
+            if (pagenum == 1 && event.key.code == Keyboard::Escape) {
+                pagenum = 10;
+            }
+        }
+
+    }
+    
+}
 
 void initGame(Game& game) {
     game.window.create(VideoMode(1536, 864), "Super Hobs");
@@ -289,9 +383,11 @@ void initGame(Game& game) {
     game.pausetext.setCharacterSize(96);
 
     game.gameovertext.setFont(game.font);
-    game.gameovertext.setFillColor(Color::White);
+    game.gameovertext.setFillColor(Color::Red);
     game.gameovertext.setString("GAME OVER");
     game.gameovertext.setCharacterSize(96);
+    game.gameovertext.setOutlineColor(Color::White);
+    game.gameovertext.setOutlineThickness(2);
 
     initPlayer(game.player);
     initLevel(game.map[0], game.font, 1);
@@ -351,7 +447,6 @@ void updateGame(Game& game, float elapsed) {
                     Win = false;
                 }
                 if (event.key.code == Keyboard::Enter && game.currentMap == 0) {
-                    pagenum = 1;
                     game.currentMap = 1;
                     game.player.hitbox.left = 0;
                     game.player.hitbox.top = 0;
@@ -423,7 +518,6 @@ void drawGame(Game& game) {
 
 }
 
-
 void initPlayer(Player& player) {
     player.hurtBuffer.loadFromFile("./assets/audio/hurt.wav");
     player.hurtSound.setBuffer(player.hurtBuffer);
@@ -463,9 +557,6 @@ void initPlayer(Player& player) {
     player.hitbox = FloatRect(player.body.getPosition(), Vector2f(TILE_WIDTH, TILE_WIDTH));
     player.headPoint = FloatRect(player.hitbox.getPosition() + Vector2f(1, -8), Vector2f(30, 8));
 
-    player.debugger = RectangleShape(Vector2f(TILE_WIDTH, 32));
-    player.debugger.setFillColor(Color::White);
-
     player.acceleration.x = 50;
 
     player.bullet.bullets_tx.loadFromFile("./assets/player/projectile.png");
@@ -500,7 +591,6 @@ void updatePlayer(Player& player, Level& level, float elapsed) {
 
     updatePlayerAnimation(player);
 
-    //player.debugger.setPosition(round(player.hitbox.left),round(player.hitbox.top));
     player.body.setTexture(player.anim[player.animationState].spritesheet);
     player.body.setTextureRect(player.anim[player.animationState].currentSprite);
     player.wings.setTextureRect(player.wingsAnimation.currentSprite);
@@ -682,7 +772,6 @@ void drawPlayer(Game& game) {
     game.window.draw(game.player.bullet.bullets_sprite);
     
     game.window.draw(game.player.body);
-    //game.window.draw(game.player.debugger);
 }
 void movePlayer(Player& player, Level& level, float elapsed) {
 
@@ -736,7 +825,6 @@ void movePlayer(Player& player, Level& level, float elapsed) {
     collisionHead(player, level);
     collisionX(player, level);
     collisionY(player, level);
-    player.debugger.setPosition(player.hitbox.getPosition());
     player.body.setPosition(player.hitbox.left - 16, player.hitbox.top - 32);
     player.wings.setPosition(player.hitbox.left + (player.wingsAnimation.flipped * 32), player.hitbox.top);
 }
@@ -773,6 +861,222 @@ void updatePlayerAnimation(Player& player) {
     }
 }
 
+void initEnemy(Enemy& enemy,Vector2f position)
+{
+    enemy.anim[0].spritesheet.loadFromFile("./assets/enemy/rat.png");
+    initAnimation(enemy.anim[0], 36, 28, 6);
+    enemy.anim[0].flipped = true; //sprite faces left, movement is right by default.
+    enemy.velocity.x = 45;
+    enemy.health = 35;
+    enemy.body.setPosition(position);
+    enemy.body.setScale(Vector2f(2, 2));
+}
+void moveEnemy(Enemy& enemy, Level level, float elapsed) {
+    //Apply gravity
+    enemy.velocity.y += GRAVITY * elapsed;
+
+    // Make sure enemy doesn't go too fast, otherwise collisions will break
+    if (enemy.velocity.y > 500)
+        enemy.velocity.y = 500;
+
+    // Move horizontally and vertically
+    enemy.body.move(enemy.velocity.x * elapsed, enemy.velocity.y * elapsed);
+
+    // Check for collisions in X direction
+    collisionX(enemy, level);
+    collisionY(enemy, level);
+}
+void updateEnemy(Enemy& enemy, Level& level, float elapsed) {
+
+    // Update enemy animation
+    updateEnemyAnimation(enemy);
+
+    // Move the enemy
+    moveEnemy(enemy, level, elapsed);
+
+    // setting texture
+
+    enemy.body.setTexture(enemy.anim[enemy.animationState].spritesheet);
+    enemy.body.setTextureRect(enemy.anim[enemy.animationState].currentSprite);
+}
+void updateEnemyAnimation(Enemy& enemy)
+{
+    updateAnimation(enemy.anim[0]);
+
+}
+void collisionX(Enemy& enemy, Level& level)
+{
+    int left_tile = enemy.body.getPosition().x / TILE_WIDTH;
+    int right_tile = left_tile + 2;
+    int vertical_pos = enemy.body.getPosition().y / TILE_WIDTH;
+    //Sprite is approximately 3 tiles long (when rounded up) so we need to check the 3 tiles it covers horizontally
+    //Since we're dealing with X collisions we don't need to check below it
+
+    int moveDirection = sign(enemy.velocity.x);
+
+    for (int j = left_tile; j <= right_tile; j++) {
+        Tile& currentTile = level.tiles[j + vertical_pos * level.width];
+
+        if (currentTile.isSolid && enemy.body.getGlobalBounds().intersects(currentTile.sprite.getGlobalBounds())) {
+            enemy.velocity.x *= -1;
+            enemy.anim[0].flipped = !enemy.anim[0].flipped;
+            enemy.body.setPosition(currentTile.sprite.getPosition().x - enemy.anim->frameWidth * 2 * moveDirection, enemy.body.getPosition().y);
+        }
+    }
+}//
+void collisionY(Enemy& enemy, Level& level) { // no head collisions for enemy
+
+    int above_tile = enemy.body.getPosition().y / TILE_WIDTH;
+    int below_tile = above_tile + 3;
+    float horizontal_pos = enemy.body.getPosition().x / TILE_WIDTH;
+    if (below_tile < 0)
+        below_tile = 0;
+    //for Y collisions we need to check the tiles it covers horizontally and the ones below
+
+
+    for (int i = above_tile; i < below_tile; i++) {
+        for (int j = horizontal_pos; j <= horizontal_pos + 2; j++) {
+            Tile& currentTile = level.tiles[j + i * level.width];
+
+            if (currentTile.isSolid && enemy.velocity.y >= 0 && enemy.body.getGlobalBounds().intersects(currentTile.sprite.getGlobalBounds())) {
+
+                enemy.velocity.y = 0;
+                enemy.body.setPosition(enemy.body.getPosition().x, currentTile.sprite.getPosition().y - (28 * 2));
+                //Push it out of the block vertically by the height of the sprite
+            }
+        }
+    }
+}
+void CollisionPlayerWithEnemy(Enemy& enemy, Player& player)
+{
+    if (player.hitbox.top < enemy.body.getPosition().y && player.hitbox.intersects(enemy.body.getGlobalBounds())) {
+        player.hitbox.top = enemy.body.getPosition().y - 32;
+        player.velocity.y = -500;
+        enemy.isalive = false;
+        player.score += 10;
+    }
+    else if (player.hitbox.intersects(enemy.body.getGlobalBounds())) {
+        int moveDirection = sign(player.velocity.x);
+        player.hitbox.left = enemy.body.getPosition().x - 32 * moveDirection;
+        player.velocity.x = 500 * -moveDirection;
+        player.health--;
+        player.hurtSound.play();
+    }
+
+    if (enemy.body.getGlobalBounds().intersects(player.bullet.bullets_sprite.getGlobalBounds())) {
+        enemy.isalive = 0;
+        player.score += 5;
+        player.bullet.together = 1;
+        player.canThrow = true;
+        player.bullet.soundPlay = true;
+    }
+}
+void drawEnemy(Game& game) {
+    if (game.map[game.currentMap].enemy.isalive == true) {
+        game.window.draw(game.map[game.currentMap].enemy.body);
+    }
+}
+
+void initbear(Bear& bear, Vector2f position) {
+    bear.anim[0].spritesheet.loadFromFile("./assets/enemy/bear.png");
+    initAnimation(bear.anim[0], 54, 63, 4);
+    bear.anim[0].flipped = false; //sprite faces left, movement is right by default. 
+    bear.velocity.x = 65;
+    bear.health = 500;
+    bear.body.setPosition(position);
+    bear.body.setScale(Vector2f(2, 2));
+}
+void movebear(Bear& bear, Level level, float elapsed) {
+    bear.velocity.y += GRAVITY * elapsed;
+    if (bear.velocity.y > 500)
+        bear.velocity.y = 500;
+    bear.body.move(bear.velocity.x * elapsed, bear.velocity.y * elapsed);
+    collisionX(bear, level);
+    collisionY(bear, level);
+}
+void updateBear(Bear& bear, Level& level, float elapsed) {
+    if (bear.health <= 0)
+        bear.isalive = false;
+    updatebearAnimation(bear);
+    movebear(bear, level, elapsed);
+    bear.body.setTexture(bear.anim[bear.animationState].spritesheet);
+    bear.body.setTextureRect(bear.anim[bear.animationState].currentSprite);
+}
+void updatebearAnimation(Bear& bear) {
+    updateAnimation(bear.anim[0]);
+}
+void collisionX(Bear& bear, Level& level) {
+    int left_tile = bear.body.getPosition().x / TILE_WIDTH;
+    int right_tile = left_tile + 3;
+    int vertical_pos = bear.body.getPosition().y / TILE_WIDTH;
+    //Sprite is approximately 3 tiles long (when rounded up) so we need to check the 3 tiles it covers horizontally
+    //Since we're dealing with X collisions we don't need to check below it
+
+    int moveDirection = sign(bear.velocity.x);
+    for (int i = vertical_pos; i <= vertical_pos + 3; i++) {
+        for (int j = left_tile; j <= right_tile; j++) {
+            Tile& currentTile = level.tiles[j + i * level.width];
+
+            if (currentTile.isSolid && bear.body.getGlobalBounds().intersects(currentTile.sprite.getGlobalBounds())) {
+                bear.velocity.x *= -1;
+                bear.anim[0].flipped = !bear.anim[0].flipped;
+                bear.body.setPosition(currentTile.sprite.getPosition().x - (54 * 2 * moveDirection), bear.body.getPosition().y);
+            }
+        }
+    }
+}
+void collisionY(Bear& bear, Level& level) {
+    int above_tile = bear.body.getPosition().y / TILE_WIDTH;
+    int below_tile = above_tile + 3;
+    float horizontal_pos = bear.body.getPosition().x / TILE_WIDTH;
+    if (below_tile < 0)
+        below_tile = 0;
+    //for Y collisions we need to check the tiles it covers horizontally and the ones below
+
+
+    for (int i = above_tile; i < below_tile+3; i++) {
+        for (int j = horizontal_pos; j <= horizontal_pos + 3; j++) {
+            Tile& currentTile = level.tiles[j + i * level.width];
+
+            if (currentTile.isSolid && bear.velocity.y >= 0 && bear.body.getGlobalBounds().intersects(currentTile.sprite.getGlobalBounds())) {
+
+                bear.velocity.y = 0;
+                bear.body.setPosition(bear.body.getPosition().x, currentTile.sprite.getPosition().y - (63 * 2) );
+                //Push it out of the block vertically by the height of the sprite
+            }
+        }
+    }
+
+}
+void CollisionPlayerWithEnemy(Bear& bear, Player& player)
+{
+    if (abs(player.velocity.x > 0) && player.hitbox.intersects(bear.body.getGlobalBounds())) {
+        int moveDirection = sign(player.velocity.x);
+        player.hitbox.left = bear.body.getPosition().x - 32 * moveDirection;
+        player.velocity.x = 900 * -moveDirection;
+        player.health--;
+        player.hurtSound.play();
+    }
+
+    if (player.velocity.y > 0 && player.hitbox.intersects(bear.body.getGlobalBounds())) {
+        player.hitbox.top = bear.body.getPosition().y - 32;
+        player.velocity.y = -900;
+        bear.health -= 100;
+        player.score += 10;
+    }
+
+    if (bear.body.getGlobalBounds().intersects(player.bullet.bullets_sprite.getGlobalBounds())) {
+        bear.health-= (100 * player.damageMultiplier);
+        player.bullet.together = 1;
+        player.canThrow = true;
+        player.bullet.soundPlay = true;
+    }
+}
+void drawBear(Game& game) {
+    if (game.map[game.currentMap].bear.isalive == true) {
+        game.window.draw(game.map[game.currentMap].bear.body);
+    }
+}
 
 void initAnimation(Animation& anim, int width, int height, int frameCount) {
     anim.frameCount = frameCount;
@@ -799,7 +1103,6 @@ void updateAnimation(Animation& anim) {
     }
 }
 
-
 void initLevel(Level& level,Font &font,int i) {
     level.spritesheet.loadFromFile("./assets/level/level_tileset.png");
     level.feather.loadFromFile("./assets/level/feather.png");
@@ -813,6 +1116,8 @@ void initLevel(Level& level,Font &font,int i) {
 
     level.winBuffer.loadFromFile("./assets/audio/win.wav");//loading win buffer
     level.winSound.setBuffer(level.winBuffer);//setting buffer
+    level.winSound.setVolume(50);
+    level.playWinSound = true;
 
 
     loadLevelFile(level,i);
@@ -833,7 +1138,10 @@ void initLevel(Level& level,Font &font,int i) {
     level.win_text.setFont(font);
     level.win_text.setString("YOU WIN!");
     level.win_text.setCharacterSize(96);
-    level.win_text.setFillColor(Color::Black);
+    //level.win_text.setFillColor(Color(170,100,255,255));
+    level.win_text.setFillColor(Color(250, 200, 80, 255));
+    level.win_text.setOutlineColor(Color::White);
+    level.win_text.setOutlineThickness(2);
 
     level.tiles = new Tile[level.height * level.width];
 
@@ -968,6 +1276,9 @@ void initLevel(Level& level,Font &font,int i) {
         level.enemy.isalive = 1;
     }
 
+
+    level.countdown_timer = 60;
+
 }
 void loadLevelFile(Level& level,int i) {
     std::string fileToLoad = "./assets/level/level" + std::to_string(i) + ".txt";
@@ -987,7 +1298,6 @@ void updateLevel(Game& game,float elapsed) {
     if (game.map[game.currentMap].timer.getElapsedTime().asSeconds() >= 1) {
         if (Win != true) // stopping timer
             game.map[game.currentMap].countdown_timer--;
-        game.map[game.currentMap].countdown_timer;
         game.map[game.currentMap].timer_text.setString("TIME\n " + std::to_string(game.map[game.currentMap].countdown_timer));
         game.map[game.currentMap].timer.restart();
         if (game.map[game.currentMap].countdown_timer <= 0)
@@ -1056,314 +1366,4 @@ void drawLevel(Game& game) {
     }
 
     
-}
-
-
-void makeMenu(Menu& menu, float width, float height) {
-    menu.font.loadFromFile("./assets/font.ttf");
-
-    menu.mainmenu[0].setFont(menu.font);
-    menu.mainmenu[0].setFillColor(Color(85, 140, 250, 255));
-    menu.mainmenu[0].setString("Play");
-    menu.mainmenu[0].setCharacterSize(96);
-    menu.mainmenu[0].setOrigin(menu.mainmenu[0].getLocalBounds().width/2, menu.mainmenu[0].getLocalBounds().height/2);
-    menu.mainmenu[0].setPosition(Vector2f(1536/2, 864/2-150));
-
-
-    menu.mainmenu[1].setFont(menu.font);
-    menu.mainmenu[1].setFillColor(Color::White);
-    menu.mainmenu[1].setString("Instructions");
-    menu.mainmenu[1].setCharacterSize(96);
-    menu.mainmenu[1].setOrigin(menu.mainmenu[1].getLocalBounds().width / 2, menu.mainmenu[1].getLocalBounds().height / 2);
-    menu.mainmenu[1].setPosition(Vector2f(1536 / 2+10, 864 / 2));
-
-    menu.mainmenu[2].setFont(menu.font);
-    menu.mainmenu[2].setFillColor(Color::White);
-    menu.mainmenu[2].setString("Exit");
-    menu.mainmenu[2].setCharacterSize(96);
-    menu.mainmenu[2].setOrigin(menu.mainmenu[2].getLocalBounds().width / 2, menu.mainmenu[2].getLocalBounds().height / 2);
-    menu.mainmenu[2].setPosition(Vector2f(1536/2, 864 / 2 + 150));
-
-    menu.backgroundTexture.loadFromFile("./assets/background.png");
-    menu.background.setTexture(menu.backgroundTexture);
-}
-void drawMenu(Menu& menu, RenderWindow& window) {
-    window.setView(window.getDefaultView());
-    window.draw(menu.background);
-    for (int i = 0; i < 3; i++) {
-        window.draw(menu.mainmenu[i]);
-    }
-
-}
-void movedown(Menu& menu) {
-    if (menu.selected <= 2)
-    {
-        menu.mainmenu[menu.selected].setFillColor(Color::White);
-        menu.selected++;
-        if (menu.selected > 2) {
-            menu.selected = 0;
-        }
-        menu.mainmenu[menu.selected].setFillColor(Color(85, 140, 250, 255));
-    }
-}
-void moveup(Menu& menu) {
-    if (menu.selected >= 0)
-    {
-        menu.mainmenu[menu.selected].setFillColor(Color::White);
-        menu.selected--;
-        if (menu.selected < 0) {
-            menu.selected = 2;
-        }
-        menu.mainmenu[menu.selected].setFillColor(Color(85, 140, 250, 255));
-    }
-}
-void updateMenu(Menu& menu, RenderWindow& window) {
-    Event event;
-    std::string name;
-
-    while (window.pollEvent(event))
-    {
-        if (event.type == Event::Closed) {
-            window.close();
-            break;
-        }
-        if (event.type == Event::KeyPressed) {
-            if (event.key.code == Keyboard::Up) {
-                moveup(menu);
-            }
-            if (event.key.code == Keyboard::Down) {
-                movedown(menu);
-            }
-            if (event.key.code == Keyboard::Enter) {
-                if (menu.selected == 1) {
-                    if (secondLevelUnlocked == true) {
-                        pagenum = menu.selected;
-                    }
-                } else {
-                    pagenum = menu.selected;
-                }
-            }
-        }
-
-    }
-
-}
-
-
-void initbear(Bear& bear, Vector2f position) {
-    bear.anim[0].spritesheet.loadFromFile("./assets/enemy/bear.png");
-    initAnimation(bear.anim[0], 54, 63, 4);
-    bear.anim[0].flipped = false; //sprite faces left, movement is right by default. 
-    bear.velocity.x = 65;
-    bear.health = 500;
-    bear.body.setPosition(position);
-    bear.body.setScale(Vector2f(2, 2));
-}
-void movebear(Bear& bear, Level level, float elapsed) {
-    bear.velocity.y += GRAVITY * elapsed;
-    if (bear.velocity.y > 500)
-        bear.velocity.y = 500;
-    bear.body.move(bear.velocity.x * elapsed, bear.velocity.y * elapsed);
-    collisionX(bear, level);
-    collisionY(bear, level);
-}
-void updateBear(Bear& bear, Level& level, float elapsed) {
-    if (bear.health <= 0)
-        bear.isalive = false;
-    updatebearAnimation(bear);
-    movebear(bear, level, elapsed);
-    bear.body.setTexture(bear.anim[bear.animationState].spritesheet);
-    bear.body.setTextureRect(bear.anim[bear.animationState].currentSprite);
-}
-void updatebearAnimation(Bear& bear) {
-    updateAnimation(bear.anim[0]);
-}
-void collisionX(Bear& bear, Level& level) {
-    int left_tile = bear.body.getPosition().x / TILE_WIDTH;
-    int right_tile = left_tile + 3;
-    int vertical_pos = bear.body.getPosition().y / TILE_WIDTH;
-    //Sprite is approximately 3 tiles long (when rounded up) so we need to check the 3 tiles it covers horizontally
-    //Since we're dealing with X collisions we don't need to check below it
-
-    int moveDirection = sign(bear.velocity.x);
-    for (int i = vertical_pos; i <= vertical_pos + 3; i++) {
-        for (int j = left_tile; j <= right_tile; j++) {
-            Tile& currentTile = level.tiles[j + i * level.width];
-
-            if (currentTile.isSolid && bear.body.getGlobalBounds().intersects(currentTile.sprite.getGlobalBounds())) {
-                bear.velocity.x *= -1;
-                bear.anim[0].flipped = !bear.anim[0].flipped;
-                bear.body.setPosition(currentTile.sprite.getPosition().x - (54 * 2 * moveDirection), bear.body.getPosition().y);
-            }
-        }
-    }
-}
-void collisionY(Bear& bear, Level& level) {
-    int above_tile = bear.body.getPosition().y / TILE_WIDTH;
-    int below_tile = above_tile + 3;
-    float horizontal_pos = bear.body.getPosition().x / TILE_WIDTH;
-    if (below_tile < 0)
-        below_tile = 0;
-    //for Y collisions we need to check the tiles it covers horizontally and the ones below
-
-
-    for (int i = above_tile; i < below_tile+3; i++) {
-        for (int j = horizontal_pos; j <= horizontal_pos + 3; j++) {
-            Tile& currentTile = level.tiles[j + i * level.width];
-
-            if (currentTile.isSolid && bear.velocity.y >= 0 && bear.body.getGlobalBounds().intersects(currentTile.sprite.getGlobalBounds())) {
-
-                bear.velocity.y = 0;
-                bear.body.setPosition(bear.body.getPosition().x, currentTile.sprite.getPosition().y - (63 * 2) );
-                //Push it out of the block vertically by the height of the sprite
-            }
-        }
-    }
-
-}
-void CollisionPlayerWithEnemy(Bear& bear, Player& player)
-{
-    if (abs(player.velocity.x > 0) && player.hitbox.intersects(bear.body.getGlobalBounds())) {
-        int moveDirection = sign(player.velocity.x);
-        player.hitbox.left = bear.body.getPosition().x - 32 * moveDirection;
-        player.velocity.x = 900 * -moveDirection;
-        player.health--;
-        player.hurtSound.play();
-    }
-
-    if (player.velocity.y > 0 && player.hitbox.intersects(bear.body.getGlobalBounds())) {
-        player.hitbox.top = bear.body.getPosition().y - 32;
-        player.velocity.y = -900;
-        bear.health -= 100;
-        player.score += 10;
-    }
-
-    if (bear.body.getGlobalBounds().intersects(player.bullet.bullets_sprite.getGlobalBounds())) {
-        bear.health-= (100 * player.damageMultiplier);
-        player.bullet.together = 1;
-        player.canThrow = true;
-        player.bullet.soundPlay = true;
-    }
-}
-void drawBear(Game& game) {
-    if (game.map[game.currentMap].bear.isalive == true) {
-        game.window.draw(game.map[game.currentMap].bear.body);
-    }
-}
-
-
-void initEnemy(Enemy& enemy,Vector2f position)
-{
-    enemy.anim[0].spritesheet.loadFromFile("./assets/enemy/rat.png");
-    initAnimation(enemy.anim[0], 36, 28, 6);
-    enemy.anim[0].flipped = true; //sprite faces left, movement is right by default.
-    enemy.velocity.x = 45;
-    enemy.health = 35;
-    enemy.body.setPosition(position);
-    enemy.body.setScale(Vector2f(2, 2));
-}
-void moveEnemy(Enemy& enemy, Level level, float elapsed) {
-    //Apply gravity
-    enemy.velocity.y += GRAVITY * elapsed;
-
-    // Make sure enemy doesn't go too fast, otherwise collisions will break
-    if (enemy.velocity.y > 500)
-        enemy.velocity.y = 500;
-
-    // Move horizontally and vertically
-    enemy.body.move(enemy.velocity.x * elapsed, enemy.velocity.y * elapsed);
-
-    // Check for collisions in X direction
-    collisionX(enemy, level);
-    collisionY(enemy, level);
-}
-void updateEnemy(Enemy& enemy, Level& level, float elapsed) {
-
-    // Update enemy animation
-    updateEnemyAnimation(enemy);
-
-    // Move the enemy
-    moveEnemy(enemy, level, elapsed);
-
-    // setting texture
-
-    enemy.body.setTexture(enemy.anim[enemy.animationState].spritesheet);
-    enemy.body.setTextureRect(enemy.anim[enemy.animationState].currentSprite);
-}
-void updateEnemyAnimation(Enemy& enemy)
-{
-    updateAnimation(enemy.anim[0]);
-
-}
-void collisionX(Enemy& enemy, Level& level)
-{
-    int left_tile = enemy.body.getPosition().x / TILE_WIDTH;
-    int right_tile = left_tile + 2;
-    int vertical_pos = enemy.body.getPosition().y / TILE_WIDTH;
-    //Sprite is approximately 3 tiles long (when rounded up) so we need to check the 3 tiles it covers horizontally
-    //Since we're dealing with X collisions we don't need to check below it
-
-    int moveDirection = sign(enemy.velocity.x);
-
-    for (int j = left_tile; j <= right_tile; j++) {
-        Tile& currentTile = level.tiles[j + vertical_pos * level.width];
-
-        if (currentTile.isSolid && enemy.body.getGlobalBounds().intersects(currentTile.sprite.getGlobalBounds())) {
-            enemy.velocity.x *= -1;
-            enemy.anim[0].flipped = !enemy.anim[0].flipped;
-            enemy.body.setPosition(currentTile.sprite.getPosition().x - enemy.anim->frameWidth * 2 * moveDirection, enemy.body.getPosition().y);
-        }
-    }
-}
-void collisionY(Enemy& enemy, Level& level) { // no head collisions for enemy
-
-    int above_tile = enemy.body.getPosition().y / TILE_WIDTH;
-    int below_tile = above_tile + 3;
-    float horizontal_pos = enemy.body.getPosition().x / TILE_WIDTH;
-    if (below_tile < 0)
-        below_tile = 0;
-    //for Y collisions we need to check the tiles it covers horizontally and the ones below
-
-
-    for (int i = above_tile; i < below_tile; i++) {
-        for (int j = horizontal_pos; j <= horizontal_pos + 2; j++) {
-            Tile& currentTile = level.tiles[j + i * level.width];
-
-            if (currentTile.isSolid && enemy.velocity.y >= 0 && enemy.body.getGlobalBounds().intersects(currentTile.sprite.getGlobalBounds())) {
-
-                enemy.velocity.y = 0;
-                enemy.body.setPosition(enemy.body.getPosition().x, currentTile.sprite.getPosition().y - (28 * 2));
-                //Push it out of the block vertically by the height of the sprite
-            }
-        }
-    }
-}
-void CollisionPlayerWithEnemy(Enemy& enemy, Player& player)
-{
-    if (player.hitbox.top < enemy.body.getPosition().y && player.hitbox.intersects(enemy.body.getGlobalBounds())) {
-        player.hitbox.top = enemy.body.getPosition().y - 32;
-        player.velocity.y = -500;
-        enemy.isalive = false;
-        player.score += 10;
-    }
-    else if (player.hitbox.intersects(enemy.body.getGlobalBounds())) {
-        int moveDirection = sign(player.velocity.x);
-        player.hitbox.left = enemy.body.getPosition().x - 32 * moveDirection;
-        player.velocity.x = 500 * -moveDirection;
-        player.health--;
-        player.hurtSound.play();
-    }
-
-    if (enemy.body.getGlobalBounds().intersects(player.bullet.bullets_sprite.getGlobalBounds())) {
-        enemy.isalive = 0;
-        player.score += 5;
-        player.bullet.together = 1;
-        player.canThrow = true;
-        player.bullet.soundPlay = true;
-    }
-}
-void drawEnemy(Game& game) {
-    if (game.map[game.currentMap].enemy.isalive == true) {
-        game.window.draw(game.map[game.currentMap].enemy.body);
-    }
 }
