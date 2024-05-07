@@ -242,7 +242,6 @@ int main() {
             drawGame(game);
             break;
         case 1:
-            
         case 10:
             updateMenu(menu, game.window);
             game.window.clear(Color::Black);
@@ -267,7 +266,7 @@ void makeMenu(Menu& menu, float width, float height) {
     menu.font.loadFromFile("./assets/font.ttf");
 
     menu.mainmenu[0].setFont(menu.font);
-    menu.mainmenu[0].setFillColor(Color(85, 140, 250, 255));
+    menu.mainmenu[0].setFillColor(Color(8, 130, 225, 255));
     menu.mainmenu[0].setString("Play");
     menu.mainmenu[0].setCharacterSize(96);
     menu.mainmenu[0].setOrigin(menu.mainmenu[0].getLocalBounds().width/2, menu.mainmenu[0].getLocalBounds().height/2);
@@ -319,7 +318,7 @@ void movedown(Menu& menu) {
 	menu.selected++;
 	if (menu.selected > 2) 
 		menu.selected = 0;
-	menu.mainmenu[menu.selected].setFillColor(Color(85, 140, 250, 255));
+	menu.mainmenu[menu.selected].setFillColor(Color(8, 130, 225, 255));
 }
 void moveup(Menu& menu) {
 
@@ -327,7 +326,7 @@ void moveup(Menu& menu) {
 	menu.selected--;
 	if (menu.selected < 0) 
 		menu.selected = 2;
-	menu.mainmenu[menu.selected].setFillColor(Color(85, 140, 250, 255));
+	menu.mainmenu[menu.selected].setFillColor(Color(8, 130, 225, 255));
 
 }
 void updateMenu(Menu& menu, RenderWindow& window) {
@@ -350,6 +349,7 @@ void updateMenu(Menu& menu, RenderWindow& window) {
             if (event.key.code == Keyboard::Enter) {
                 pagenum = menu.selected;
             }
+
             if (pagenum == 1 && event.key.code == Keyboard::Escape) {
                 pagenum = 10;
             }
@@ -381,7 +381,9 @@ void initGame(Game& game) {
     game.pausetext.setFont(game.font);
     game.pausetext.setFillColor(Color::White);
     game.pausetext.setString("PAUSED");
-    game.pausetext.setCharacterSize(96);
+    game.pausetext.setCharacterSize(96); 
+    game.pausetext.setOutlineThickness(2);
+    game.pausetext.setOutlineColor(Color(160,30,160,255));
 
     game.gameovertext.setFont(game.font);
     game.gameovertext.setFillColor(Color::Red);
@@ -581,7 +583,7 @@ void updatePlayer(Player& player, Level& level, float elapsed) {
 
     collisionX(player.bullet, level, player);
 
-    if (player.score >= 20) {
+    if (player.score >= 15) {
         player.score = 0;
         player.lives++;
     }
@@ -684,6 +686,12 @@ void collisionX(Projectile& bullet, Level& level, Player& player) {
     int vertical_pos = bullet.bullets_sprite.getPosition().y / TILE_WIDTH;
 
     //int moveDirection = sign(player.velocity.x);
+
+    if (bullet.bullets_sprite.getPosition().x < 0 || bullet.bullets_sprite.getPosition().x > 128 * 32) {
+        bullet.together = true;
+        player.canThrow = true;
+        player.bullet.soundPlay = true;
+    }
 
 
     for (int i = vertical_pos; i <= vertical_pos; i++) {
@@ -803,7 +811,7 @@ void movePlayer(Player& player, Level& level, float elapsed) {
     if (Keyboard::isKeyPressed(Keyboard::Scan::F) && player.canThrow) {
         player.canThrow = false;
         player.bullet.together = false;
-        player.bullet.velocity = 7;
+        player.bullet.velocity = 20;
         player.bullet.last_key = player.bullet.direction;
         player.bullet.bulletSoundBuffer.loadFromFile("./assets/audio/shoot.wav");
         player.bullet.bulletSound.setBuffer(player.bullet.bulletSoundBuffer);
@@ -988,6 +996,7 @@ void initbear(Bear& bear, Vector2f position) {
     bear.body.setScale(Vector2f(2, 2));
 }
 void movebear(Bear& bear, Level level, float elapsed) {
+    std::cout << bear.body.getPosition().x << ' ' << bear.body.getPosition().y << '\n';
     bear.velocity.y += GRAVITY * elapsed;
     if (bear.velocity.y > 500)
         bear.velocity.y = 500;
@@ -997,6 +1006,7 @@ void movebear(Bear& bear, Level level, float elapsed) {
 }
 void updateBear(Bear& bear, Level& level, float elapsed) {
 
+
     if (bear.jumpTimer.getElapsedTime().asSeconds() > 3.0f) {
         bear.velocity.y = -800;
         bear.jumpTimer.restart();
@@ -1005,7 +1015,10 @@ void updateBear(Bear& bear, Level& level, float elapsed) {
     if (bear.health <= 0)
         bear.isalive = false;
     updatebearAnimation(bear);
-    movebear(bear, level, elapsed);
+
+    if (bear.isalive)
+        movebear(bear, level, elapsed);
+
     bear.body.setTexture(bear.anim[bear.animationState].spritesheet);
     bear.body.setTextureRect(bear.anim[bear.animationState].currentSprite);
 }
@@ -1149,7 +1162,6 @@ void initLevel(Level& level,Font &font,int i) {
     level.win_text.setFont(font);
     level.win_text.setString("YOU WIN!");
     level.win_text.setCharacterSize(96);
-    //level.win_text.setFillColor(Color(170,100,255,255));
     level.win_text.setFillColor(Color(250, 200, 80, 255));
     level.win_text.setOutlineColor(Color::White);
     level.win_text.setOutlineThickness(2);
@@ -1275,7 +1287,7 @@ void initLevel(Level& level,Font &font,int i) {
         }
     }
     if (i == 1) {
-        initbear(level.bear,Vector2f(1600,0));
+        initbear(level.bear,Vector2f(0,0));
         level.bear.isalive = 0;
         initEnemy(level.enemy,Vector2f(55*32,14*32));
         level.enemy.isalive = 1;
@@ -1303,8 +1315,8 @@ void loadLevelFile(Level& level,int i) {
     levelFile.close();
 }
 void updateLevel(Game& game,float elapsed) {
-    game.map[game.currentMap].score_text.setPosition(round(game.camera.getCenter().x-75), 0);
-    game.map[game.currentMap].score_text.setString("SCORE\t  LIVES\n  " + std::to_string(game.player.score) + "\t\t\t" + std::to_string(game.player.lives));
+    game.map[game.currentMap].score_text.setPosition(round(game.camera.getCenter().x-200), 0);
+    game.map[game.currentMap].score_text.setString(" HP\t  SCORE\t  LIVES\n " + std::to_string(game.player.health) + "\t\t  " + std::to_string(game.player.score) + "\t\t\t" + std::to_string(game.player.lives));
 
     if (game.map[game.currentMap].timer.getElapsedTime().asSeconds() >= 1) {
         if (Win != true) // stopping timer
@@ -1315,7 +1327,7 @@ void updateLevel(Game& game,float elapsed) {
             gameover = 1;
     }
 
-    game.map[game.currentMap].timer_text.setPosition(round(game.camera.getCenter().x + 200), 0);
+    game.map[game.currentMap].timer_text.setPosition(round(game.camera.getCenter().x + 150), 0);
 
 
     game.map[game.currentMap].background.setPosition(game.camera.getCenter());
@@ -1324,8 +1336,8 @@ void updateLevel(Game& game,float elapsed) {
         game.map[game.currentMap].score_text.setFillColor(Color::White);
         game.map[game.currentMap].timer_text.setFillColor(Color::White);
         game.map[game.currentMap].timer_text.setString("TIME\n " + std::to_string(LEVEL_TIMER - game.map[game.currentMap].countdown_timer));
-        game.map[game.currentMap].win_text.setPosition(round(game.camera.getCenter().x) - 200, game.camera.getCenter().y - 150);
-        game.map[game.currentMap].timer_text.setPosition(round(game.camera.getCenter().x + 50), game.camera.getCenter().y - 50);
+        game.map[game.currentMap].win_text.setPosition(round(game.camera.getCenter().x) - 150, game.camera.getCenter().y - 150);
+        game.map[game.currentMap].timer_text.setPosition(round(game.camera.getCenter().x + 150), game.camera.getCenter().y - 50);
         game.map[game.currentMap].score_text.setPosition(round(game.camera.getCenter().x) - 200, game.camera.getCenter().y - 50);
         if (game.currentMap == 0) {
             secondLevelUnlocked = true;
@@ -1336,6 +1348,7 @@ void updateLevel(Game& game,float elapsed) {
             game.map[game.currentMap].playWinSound = false;
         }
     }
+
 
     updateBear(game.map[game.currentMap].bear, game.map[game.currentMap],elapsed);
     updateEnemy(game.map[game.currentMap].enemy, game.map[game.currentMap], elapsed);
