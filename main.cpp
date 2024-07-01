@@ -313,7 +313,6 @@ void drawMenu(Menu& menu, RenderWindow& window) {
 
 }
 void movedown(Menu& menu) {
-
 	menu.mainmenu[menu.selected].setFillColor(Color::White);
 	menu.selected++;
 	if (menu.selected > 2) 
@@ -811,7 +810,7 @@ void movePlayer(Player& player, Level& level, float elapsed) {
     if (Keyboard::isKeyPressed(Keyboard::Scan::F) && player.canThrow) {
         player.canThrow = false;
         player.bullet.together = false;
-        player.bullet.velocity = 20;
+        player.bullet.velocity = 7;
         player.bullet.last_key = player.bullet.direction;
         player.bullet.bulletSoundBuffer.loadFromFile("./assets/audio/shoot.wav");
         player.bullet.bulletSound.setBuffer(player.bullet.bulletSoundBuffer);
@@ -996,7 +995,7 @@ void initbear(Bear& bear, Vector2f position) {
     bear.body.setScale(Vector2f(2, 2));
 }
 void movebear(Bear& bear, Level level, float elapsed) {
-    std::cout << bear.body.getPosition().x << ' ' << bear.body.getPosition().y << '\n';
+
     bear.velocity.y += GRAVITY * elapsed;
     if (bear.velocity.y > 500)
         bear.velocity.y = 500;
